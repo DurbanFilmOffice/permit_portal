@@ -261,7 +261,7 @@ Phase 3 — Authentication
   9. Login + sessions + real middleware (RBAC)
   10. Forgot / reset password
 
-Phase 4 — Citizen permit flow
+Phase 4 — Applicant permit flow
   11. My applications list
   12. Submit permit (once form fields are defined)
   13. Permit detail + status timeline
