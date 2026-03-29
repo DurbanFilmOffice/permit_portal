@@ -33,7 +33,29 @@ export const db = drizzle(client, { schema })
 
 ---
 
-## Drizzle schema pattern
+## Roles — single source of truth
+
+```ts
+// src/lib/validations/roles.ts
+import { z } from 'zod'
+
+export const ROLES = [
+  'applicant',
+  'permit_officer',
+  'admin',
+  'super_admin',
+] as const
+
+export type Role = typeof ROLES[number]
+export const roleSchema = z.enum(ROLES)
+```
+
+The `users.role` DB column is plain `text` — not a pgEnum.
+Validation happens here at the application layer.
+To add a new role: add it to the ROLES array. No migration needed.
+See the Role strategy section in `.claude/architecture.md` for the full checklist.
+
+---
 
 ```ts
 // src/db/schema/permits.ts

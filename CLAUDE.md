@@ -50,6 +50,10 @@ These apply to every task, every file, every session. Never break them.
 
 ## Roles
 
+> Roles are stored as plain `text` in the DB — not a Postgres enum.
+> New roles can be added by updating `src/lib/validations/roles.ts` only.
+> No migrations needed. See `.claude/architecture.md` for the full checklist.
+
 | Role | Scope | Key permissions |
 |---|---|---|
 | `applicant` | Own applications only | Submit, edit (draft/submitted/returned), comment (submitted/under_review only), resubmit after returned |

@@ -81,7 +81,9 @@ Never skip a layer. A component never imports a repository. A route handler neve
 ### `users`
 ```
 id, email (unique), full_name, password_hash
-role: enum(applicant, permit_officer, admin, super_admin) default applicant
+role: text not null default 'applicant'
+  ← NOT a pgEnum — plain text so new roles can be added without migrations
+  ← Validated at application layer via Zod (see Role strategy section below)
 email_verified: bool, verification_token, reset_token, reset_token_expires
 created_at, updated_at
 ```
@@ -134,6 +136,67 @@ Admin manages this via UI. On permit submit → email all WHERE is_active = true
 id, permit_id (nullable FK), recipient_email, template_name
 status: enum(sent, failed, pending), error_message, sent_at
 ```
+
+---
+
+## Role strategy
+
+### Why roles are text, not a Postgres enum
+
+`users.role` is a plain `text` column, not a `pgEnum`. This is intentional.
+
+A `pgEnum` requires an `ALTER TYPE` migration to add a new value on a live
+database — risky, requires downtime planning, and locks the table briefly.
+With `text`, adding a new role is zero-touch at the DB level.
+
+Validation is enforced at the application layer via a Zod enum, not the DB.
+
+### Current roles
+
+```ts
+// src/lib/validations/roles.ts  ← single source of truth for all roles
+export const ROLES = [
+  'applicant',
+  'permit_officer',
+  'admin',
+  'super_admin',
+] as const
+
+export type Role = typeof ROLES[number]
+// type Role = 'applicant' | 'permit_officer' | 'admin' | 'super_admin'
+
+export const roleSchema = z.enum(ROLES)
+```
+
+### Adding a new role (e.g. environmental_officer)
+
+When the approval workflow requires a new reviewer role, here is the
+complete checklist — no migrations needed:
+
+1. Add the new role string to the `ROLES` array in `src/lib/validations/roles.ts`
+2. Update `src/middleware.ts` — add the new role to whichever route groups it should access
+3. Update sidebar nav items in the relevant layout if the new role needs
+   different navigation
+4. Add the role badge colour in `sidebar.tsx` (the role badge switch/map)
+5. Create or update `workflow_step_definitions` rows in the DB to assign
+   steps to the new role — this is a data change, not a code change
+6. Document the new role in this file under Current roles
+
+That is the complete list. No ALTER TABLE, no migration file, no deployment risk.
+
+### Workflow roles vs system roles
+
+The approval workflow uses `workflow_step_definitions.assigned_role` (text)
+to specify which role can claim each step. This does NOT have to match a
+value in the `ROLES` array above.
+
+This means you can have granular workflow roles like `environmental_officer`
+or `zoning_inspector` that exist only as workflow step assignments, without
+those users having a special system-level role. They would have
+`role = 'permit_officer'` in the users table but be assigned to specific
+workflow steps by a more descriptive label.
+
+This is the recommended pattern until the role requirements are fully defined.
 
 ---
 
@@ -261,7 +324,7 @@ Phase 3 — Authentication
   9. Login + sessions + real middleware (RBAC)
   10. Forgot / reset password
 
-Phase 4 — Applicant permit flow
+Phase 4 — Citizen permit flow
   11. My applications list
   12. Submit permit (once form fields are defined)
   13. Permit detail + status timeline
