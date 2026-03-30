@@ -19,7 +19,9 @@ src/
 ├── services/                     # ALL business logic — call from route handlers only
 │   ├── auth.service.ts
 │   ├── permits.service.ts        # includes approvePermit, rejectPermit
-│   ├── comments.service.ts       # enforces commenting permission rules
+│   ├── comments.service.ts       # applicant-facing thread, enforces visibility rules
+│   ├── notes.service.ts          # internal notes, enforces internal-only visibility
+│   ├── assignments.service.ts    # assign/unassign users to permits
 │   ├── notifications.service.ts  # email + portal notification dispatch
 │   ├── analytics.service.ts
 │   └── workflow.service.ts       # STUBS ONLY — do not implement
@@ -28,6 +30,8 @@ src/
 │   ├── users.repository.ts
 │   ├── permits.repository.ts
 │   ├── comments.repository.ts
+│   ├── notes.repository.ts
+│   ├── assignments.repository.ts
 │   ├── portal-notifications.repository.ts
 │   ├── permit-status-history.repository.ts
 │   └── notification-recipients.repository.ts
@@ -113,12 +117,50 @@ changed_at
 id, permit_id FK→permits ON DELETE CASCADE, author_id FK→users
 body: text, created_at, updated_at
 ```
-Rules: applicants comment only when status is submitted|under_review|returned. Officers any status. Flat list only.
+Visibility: applicant + all internal roles (permit_officer, permit_admin, admin, super_admin).
+external_user CANNOT see or write to this table.
+Write rules: applicants only when status is submitted|under_review|returned. Internal roles any status.
+Flat list, ordered by created_at ASC.
+
+### `permit_assignments` ← NEW
+```
+id: uuid PK
+permit_id: uuid FK→permits ON DELETE CASCADE
+user_id: uuid FK→users ON DELETE CASCADE
+assigned_by: uuid FK→users (who created the assignment)
+assigned_at: timestamptz defaultNow
+note: text (nullable — optional reason for assignment)
+UNIQUE(permit_id, user_id) ← one row per user per permit
+```
+Who can assign: any internal role (permit_officer, permit_admin, admin, super_admin, external_user).
+Applicants are NEVER in this table — never assigned to their own application.
+Drives:
+  - "My Applications" view for internal users: WHERE user_id = session.user.id
+  - Internal note notifications: notify all assigned users on permit except note author
+  - Workflow step claiming eligibility
+
+### `application_notes` ← NEW
+```
+id: uuid PK
+permit_id: uuid FK→permits ON DELETE CASCADE
+author_id: uuid FK→users
+body: text not null
+created_at: timestamptz defaultNow
+updated_at: timestamptz defaultNow
+```
+SEPARATE table from permit_comments — not an is_internal flag.
+Separation is intentional: a query bug can never accidentally expose notes to applicants.
+Visibility: internal roles only (permit_officer, permit_admin, external_user, admin, super_admin).
+Applicants NEVER see this. Enforced at service layer AND repository layer (separate queries).
+On insert → notify all users in permit_assignments for this permit except the note author.
+Flat list, ordered by created_at ASC.
 
 ### `portal_notifications`
 ```
 id, user_id FK→users (recipient)
-type: enum(comment_added, status_changed, permit_submitted, permit_approved, permit_rejected)
+type: enum(comment_added, note_added, status_changed, permit_submitted, permit_approved, permit_rejected)
+  ← comment_added: new applicant-facing comment (notifies other party)
+  ← note_added: new internal note (notifies all assigned users on permit)
 title: text, body: text (optional)
 permit_id FK→permits (nullable, ON DELETE SET NULL)
 is_read: bool default false, created_at
@@ -156,16 +198,54 @@ Validation is enforced at the application layer via a Zod enum, not the DB.
 ```ts
 // src/lib/validations/roles.ts  ← single source of truth for all roles
 export const ROLES = [
-  'applicant',
-  'permit_officer',
-  'admin',
-  'super_admin',
+  'applicant',        // submits and manages own applications
+  'external_user',    // assigned collaborator — internal notes only, no applicant thread access
+  'permit_officer',   // reviews applications, writes to applicant comment thread
+  'permit_admin',     // manages process — assigns users, configures workflows, can approve/reject
+  'admin',            // system config, user management, all applications
+  'super_admin',      // full access, terminal reject, delete any content
 ] as const
 
 export type Role = typeof ROLES[number]
-// type Role = 'applicant' | 'permit_officer' | 'admin' | 'super_admin'
-
 export const roleSchema = z.enum(ROLES)
+```
+
+### Role capabilities matrix
+
+| Capability | applicant | external_user | permit_officer | permit_admin | admin | super_admin |
+|---|---|---|---|---|---|---|
+| Submit applications | ✓ | | | | | |
+| View own applications | ✓ | | | | | |
+| View all applications | | | ✓ | ✓ | ✓ | ✓ |
+| View assigned applications | | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Applicant thread (read) | ✓ | | ✓ | ✓ | ✓ | ✓ |
+| Applicant thread (write) | ✓ | | ✓ | ✓ | ✓ | ✓ |
+| Internal notes (read) | | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Internal notes (write) | | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Assign users to permit | | ✓ | ✓ | ✓ | ✓ | ✓ |
+| Approve / reject | | | | ✓ | ✓ | ✓ |
+| Manage users | | | | | ✓ | ✓ |
+| System config | | | | | | ✓ |
+
+### Internal roles (non-applicant)
+These roles can all be found in `permit_assignments`. Applicants are never assigned.
+```ts
+export const INTERNAL_ROLES: Role[] = [
+  'external_user',
+  'permit_officer',
+  'permit_admin',
+  'admin',
+  'super_admin',
+]
+
+export const isInternalRole = (role: Role): boolean =>
+  INTERNAL_ROLES.includes(role)
+
+export const canAccessApplicantThread = (role: Role): boolean =>
+  ['permit_officer', 'permit_admin', 'admin', 'super_admin'].includes(role)
+
+export const canApproveReject = (role: Role): boolean =>
+  ['permit_admin', 'admin', 'super_admin'].includes(role)
 ```
 
 ### Adding a new role (e.g. environmental_officer)
@@ -330,30 +410,43 @@ Phase 4 — Citizen permit flow
   13. Permit detail + status timeline
   14. Edit + document upload
 
-Phase 5 — Comments
-  15. comment-thread + comment-form components
-  16. comments.repository + comments.service
-  17. Wire into applicant + admin detail pages
+Phase 5 — Assignments
+  15. permit_assignments repository + assignments.service
+  16. Assignment UI: assign/unassign users on permit detail page (admin view)
+  17. "My Applications" view for internal users (assigned only)
+  18. "All Applications" view for internal users (full list)
 
-Phase 6 — Approval / Rejection
-  18. approval-actions component (AlertDialog)
-  19. approvePermit / rejectPermit in permits.service
-  20. permit-status-update email template + portal notification
+Phase 6 — Comments (applicant-facing thread)
+  19. comment-thread + comment-form components
+  20. comments.repository + comments.service (enforces external_user exclusion)
+  21. Wire into applicant permit detail page
+  22. Wire into internal permit detail page (visible to all except external_user)
 
-Phase 7 — Notification bell
-  21. portal-notifications.repository
-  22. /api/notifications route handlers
-  23. notification-bell component + wire into header
+Phase 7 — Internal notes
+  23. notes-thread + notes-form components (separate from comment components)
+  24. notes.repository + notes.service (enforces internal-only visibility)
+  25. Wire into internal permit detail page (hidden from applicant view entirely)
+  26. Notification on note: notify all permit_assignments users except author
 
-Phase 8 — Admin portal
-  24. All applications table (TanStack + Nuqs)
-  25. Admin permit detail page
-  26. User management + notification recipients config
+Phase 8 — Approval / Rejection
+  27. approval-actions component (AlertDialog — permit_admin + above only)
+  28. approvePermit / rejectPermit in permits.service
+  29. permit-status-update email template + portal notification
 
-Phase 9 — Dashboard & polish
-  27. Analytics dashboard (Recharts + KPI cards)
-  28. Account settings
-  29. Vitest unit tests + Playwright E2E
+Phase 9 — Notification bell
+  30. portal-notifications.repository
+  31. /api/notifications route handlers
+  32. notification-bell component + wire into header
+
+Phase 10 — Admin portal
+  33. All applications table (TanStack + Nuqs)
+  34. Admin permit detail page (with comments + notes tabs + assignment panel)
+  35. User management + notification recipients config
+
+Phase 11 — Dashboard & polish
+  36. Analytics dashboard (Recharts + KPI cards)
+  37. Account settings
+  38. Vitest unit tests + Playwright E2E
 ```
 
 ---

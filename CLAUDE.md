@@ -25,6 +25,10 @@ These apply to every task, every file, every session. Never break them.
 6. **No new packages without confirmation.** Use what is already installed.
 7. **Workflow engine is not built yet.** `workflow.service.ts` is stubs only. Do not implement it.
 8. **Permit form is not defined yet.** `form_data` is jsonb. Do not add individual field columns.
+9. **Internal notes are never visible to applicants.** `application_notes` is a separate table from `permit_comments`. Never query notes in any applicant-facing context. Enforced at service AND repository layer.
+10. **`external_user` cannot access the applicant comment thread.** Block in `comments.service.ts` — not just in the UI.
+11. **Applicants are never in `permit_assignments`.** The assignment table is for internal users only. Check role before inserting.
+12. **`permit_officer` cannot approve or reject.** Only `permit_admin`, `admin`, and `super_admin` can. Enforce in `permits.service.ts`.
 
 ---
 
@@ -56,10 +60,18 @@ These apply to every task, every file, every session. Never break them.
 
 | Role | Scope | Key permissions |
 |---|---|---|
-| `applicant` | Own applications only | Submit, edit (draft/submitted/returned), comment (submitted/under_review only), resubmit after returned |
-| `permit_officer` | All applications | Review, approve, return, comment any status |
-| `admin` | All applications + users | Everything officer can + manage users + notification recipients |
-| `super_admin` | Everything | Full access, terminal reject, delete any comment |
+| `applicant` | Own applications | Submit, edit (draft/submitted/returned), applicant thread, resubmit after returned |
+| `external_user` | Assigned applications only | Internal notes only — no applicant thread access |
+| `permit_officer` | All + assigned applications | Applicant thread, internal notes, assign users, review |
+| `permit_admin` | All + assigned applications | Everything officer can + approve/reject + manage workflow |
+| `admin` | Everything + users | Everything permit_admin can + user management |
+| `super_admin` | Everything | Full access, terminal reject, delete any content, system config |
+
+Key distinctions:
+- `external_user` cannot read or write the applicant comment thread
+- `permit_officer` cannot approve or reject — only `permit_admin` and above
+- Assignment (`permit_assignments`) drives "My Applications" for internal roles
+- Applicants are never in `permit_assignments`
 
 ---
 
