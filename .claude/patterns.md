@@ -41,18 +41,35 @@ import { z } from 'zod'
 
 export const ROLES = [
   'applicant',
+  'external_user',
   'permit_officer',
+  'permit_admin',
   'admin',
   'super_admin',
 ] as const
 
 export type Role = typeof ROLES[number]
 export const roleSchema = z.enum(ROLES)
+
+// Internal roles — can be in permit_assignments, can write internal notes
+export const INTERNAL_ROLES: Role[] = [
+  'external_user', 'permit_officer', 'permit_admin', 'admin', 'super_admin',
+]
+
+// Can read and write the applicant-facing comment thread
+export const canAccessApplicantThread = (role: Role) =>
+  ['permit_officer', 'permit_admin', 'admin', 'super_admin'].includes(role)
+
+// Can approve or reject a permit
+export const canApproveReject = (role: Role) =>
+  ['permit_admin', 'admin', 'super_admin'].includes(role)
+
+export const isInternalRole = (role: Role) => INTERNAL_ROLES.includes(role)
 ```
 
 The `users.role` DB column is plain `text` — not a pgEnum.
 Validation happens here at the application layer.
-To add a new role: add it to the ROLES array. No migration needed.
+To add a new role: add it to ROLES array + update ROLE_CONFIG in roles.ts. No migration needed.
 See the Role strategy section in `.claude/architecture.md` for the full checklist.
 
 ---
@@ -149,15 +166,22 @@ export const permitsService = {
 
 ---
 
-## Comments service (permission enforcement)
+## Comments service (applicant-facing thread)
 
 ```ts
 // src/services/comments.service.ts
+// Applicant-facing thread only — external_user cannot access this service
 export const commentsService = {
-  async addComment(permitId: string, authorId: string, authorRole: string, body: string) {
+  async addComment(permitId: string, authorId: string, authorRole: Role, body: string) {
+    // external_user cannot write to the applicant thread
+    if (authorRole === 'external_user') {
+      throw new Error('External users cannot post to the applicant comment thread')
+    }
+
     const permit = await permitsRepository.findById(permitId)
     if (!permit) throw new Error('Permit not found')
 
+    // Applicants can only comment on active applications
     const applicantStatuses = ['submitted', 'under_review', 'returned']
     if (authorRole === 'applicant' && !applicantStatuses.includes(permit.status)) {
       throw new Error('Comments are closed for this application')
@@ -170,6 +194,68 @@ export const commentsService = {
 }
 ```
 
+## Notes service (internal notes — never visible to applicants)
+
+```ts
+// src/services/notes.service.ts
+// Internal notes only — applicants are never allowed here
+export const notesService = {
+  async addNote(permitId: string, authorId: string, authorRole: Role, body: string) {
+    // Hard block — applicants can never write internal notes
+    if (authorRole === 'applicant') {
+      throw new Error('Applicants cannot add internal notes')
+    }
+
+    const permit = await permitsRepository.findById(permitId)
+    if (!permit) throw new Error('Permit not found')
+
+    const note = await notesRepository.create({ permitId, authorId, body })
+
+    // Notify all assigned users on this permit except the author
+    const assigned = await assignmentsRepository.findByPermit(permitId)
+    const recipients = assigned.filter(a => a.userId !== authorId)
+    await notificationsService.onNoteAdded(permit, note, recipients)
+
+    return note
+  },
+
+  // ALWAYS filter by role before returning — never call findByPermit directly in a component
+  async getNotesForPermit(permitId: string, requestingRole: Role) {
+    if (requestingRole === 'applicant') {
+      throw new Error('Applicants cannot view internal notes')
+    }
+    return notesRepository.findByPermit(permitId)
+  },
+}
+```
+
+## Assignments service
+
+```ts
+// src/services/assignments.service.ts
+export const assignmentsService = {
+  async assignUser(permitId: string, userId: string, assignedBy: string, note?: string) {
+    // Prevent assigning applicants to permits
+    const user = await usersRepository.findById(userId)
+    if (!user) throw new Error('User not found')
+    if (user.role === 'applicant') {
+      throw new Error('Applicants cannot be assigned to permits')
+    }
+
+    return assignmentsRepository.create({ permitId, userId, assignedBy, note })
+  },
+
+  async unassignUser(permitId: string, userId: string) {
+    return assignmentsRepository.delete({ permitId, userId })
+  },
+
+  // "My Applications" for internal users
+  async getAssignedPermits(userId: string) {
+    return assignmentsRepository.findPermitsByUser(userId)
+  },
+}
+```
+
 ---
 
 ## Notifications service
@@ -177,6 +263,24 @@ export const commentsService = {
 ```ts
 // src/services/notifications.service.ts
 export const notificationsService = {
+
+  // Triggered when an internal note is added
+  // Notifies all assigned users on the permit except the note author
+  async onNoteAdded(permit: Permit, note: ApplicationNote, recipients: Assignment[]) {
+    await Promise.allSettled(recipients.map(r => Promise.all([
+      portalNotificationsRepository.create({
+        userId: r.userId,
+        type: 'note_added',
+        title: 'New internal note on a permit application',
+        body: permit.projectName,
+        permitId: permit.id,
+      }),
+      sendEmail({
+        to: r.user.email,
+        template: <InternalNoteEmail permit={permit} note={note} />,
+      }),
+    ])))
+  },
 
   async onStatusChanged(permit: Permit, reason?: string) {
     const type = permit.status === 'approved' ? 'permit_approved' : 'permit_rejected'
