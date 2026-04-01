@@ -2,7 +2,7 @@
 
 import Link from "next/link";
 import { useTheme } from "next-themes";
-import { ChevronDown, LogOut, Menu, Moon, Sun, UserCircle } from "lucide-react";
+import { ChevronDown, Menu, Moon, Sun, UserCircle } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Button } from "@/components/ui/button";
 import {
@@ -14,6 +14,7 @@ import {
   DropdownMenuTrigger,
 } from "@/components/ui/dropdown-menu";
 import { NotificationBell } from "@/components/notifications/notification-bell";
+import { SignOutButton } from "@/components/shared/sign-out-button";
 import type { SessionUser } from "@/types";
 import { useEffect, useState } from "react";
 
@@ -34,7 +35,6 @@ export function Header({ title, user, onMobileMenuOpen }: HeaderProps) {
   const { resolvedTheme, setTheme } = useTheme();
   const initials = getInitials(user.name);
   const [mounted, setMounted] = useState(false);
-  // Only render the icon after mount to avoid hydration mismatch
   useEffect(() => setMounted(true), []);
 
   return (
@@ -69,7 +69,7 @@ export function Header({ title, user, onMobileMenuOpen }: HeaderProps) {
               <Sun className="h-4 w-4" />
             )
           ) : (
-            <Sun className="h-4 w-4" /> // static fallback during SSR
+            <Sun className="h-4 w-4" />
           )}
         </Button>
 
@@ -107,12 +107,12 @@ export function Header({ title, user, onMobileMenuOpen }: HeaderProps) {
               </Link>
             </DropdownMenuItem>
             <DropdownMenuSeparator />
-            <DropdownMenuItem
-              className="text-destructive focus:text-destructive flex items-center gap-2 cursor-pointer"
-              onClick={() => console.log("sign out — Auth.js wired later")}
-            >
-              <LogOut className="h-4 w-4" />
-              Sign out
+            <DropdownMenuItem asChild>
+              <SignOutButton
+                showIcon
+                showLabel
+                className="w-full cursor-pointer text-destructive focus:text-destructive"
+              />
             </DropdownMenuItem>
           </DropdownMenuContent>
         </DropdownMenu>

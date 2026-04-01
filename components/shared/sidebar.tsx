@@ -1,7 +1,7 @@
-'use client'
+"use client";
 
-import Link from 'next/link'
-import { usePathname } from 'next/navigation'
+import Link from "next/link";
+import { usePathname } from "next/navigation";
 import {
   Bell,
   Building2,
@@ -10,26 +10,29 @@ import {
   FileStack,
   FileText,
   LayoutDashboard,
-  LogOut,
   Settings,
   Users,
   UserCircle,
   X,
   type LucideIcon,
-} from 'lucide-react'
-import { Avatar, AvatarFallback } from '@/components/ui/avatar'
-import { Badge } from '@/components/ui/badge'
-import { Button } from '@/components/ui/button'
-import { ScrollArea } from '@/components/ui/scroll-area'
-import { Separator } from '@/components/ui/separator'
-import { Sheet, SheetContent } from '@/components/ui/sheet'
-import { Tooltip, TooltipContent, TooltipProvider, TooltipTrigger } from '@/components/ui/tooltip'
-import { ROLE_CONFIG } from '@/lib/validations/roles'
-import type { NavItem, SessionUser } from '@/types'
-import { cn } from '@/lib/utils'
+} from "lucide-react";
+import { Avatar, AvatarFallback } from "@/components/ui/avatar";
+import { Badge } from "@/components/ui/badge";
+import { Button } from "@/components/ui/button";
+import { ScrollArea } from "@/components/ui/scroll-area";
+import { Separator } from "@/components/ui/separator";
+import { Sheet, SheetContent } from "@/components/ui/sheet";
+import {
+  Tooltip,
+  TooltipContent,
+  TooltipProvider,
+  TooltipTrigger,
+} from "@/components/ui/tooltip";
+import { ROLE_CONFIG } from "@/lib/validations/roles";
+import type { NavItem, SessionUser } from "@/types";
+import { cn } from "@/lib/utils";
+import { SignOutButton } from "@/components/shared/sign-out-button";
 
-// All icons used in nav items must be registered here.
-// Add new icons as needed when nav items are extended.
 const ICON_MAP: Record<string, LucideIcon> = {
   Bell,
   FileStack,
@@ -38,22 +41,22 @@ const ICON_MAP: Record<string, LucideIcon> = {
   Settings,
   Users,
   UserCircle,
-}
+};
 
 type SidebarProps = {
-  navItems: NavItem[]
-  user: SessionUser
-  isCollapsed: boolean
-  onToggle: () => void
-  isMobileOpen: boolean
-  onMobileClose: () => void
-}
+  navItems: NavItem[];
+  user: SessionUser;
+  isCollapsed: boolean;
+  onToggle: () => void;
+  isMobileOpen: boolean;
+  onMobileClose: () => void;
+};
 
 function getInitials(name: string): string {
-  const parts = name.trim().split(' ')
-  const first = parts[0]?.[0] ?? ''
-  const last = parts[parts.length - 1]?.[0] ?? ''
-  return (parts.length === 1 ? first : first + last).toUpperCase()
+  const parts = name.trim().split(" ");
+  const first = parts[0]?.[0] ?? "";
+  const last = parts[parts.length - 1]?.[0] ?? "";
+  return (parts.length === 1 ? first : first + last).toUpperCase();
 }
 
 function SidebarContent({
@@ -64,43 +67,63 @@ function SidebarContent({
   onClose,
   isMobile,
 }: {
-  navItems: NavItem[]
-  user: SessionUser
-  isCollapsed: boolean
-  onToggle: () => void
-  onClose?: () => void
-  isMobile: boolean
+  navItems: NavItem[];
+  user: SessionUser;
+  isCollapsed: boolean;
+  onToggle: () => void;
+  onClose?: () => void;
+  isMobile: boolean;
 }) {
-  const pathname = usePathname()
-  const expanded = isMobile || !isCollapsed
-  const roleConfig = ROLE_CONFIG[user.role]
-  const initials = getInitials(user.name)
+  const pathname = usePathname();
+  const expanded = isMobile || !isCollapsed;
+  const roleConfig = ROLE_CONFIG[user.role];
+  const initials = getInitials(user.name);
 
   return (
     <div className="flex flex-col h-full">
       {/* Logo area */}
-      <div className={cn(
-        'flex items-center h-14 px-3 border-b border-border shrink-0',
-        expanded ? 'justify-between' : 'justify-center',
-      )}>
+      <div
+        className={cn(
+          "flex items-center h-14 px-3 border-b border-border shrink-0",
+          expanded ? "justify-between" : "justify-center",
+        )}
+      >
         {expanded ? (
           <>
-            <Link href="/" className="flex items-center gap-2 font-semibold text-foreground">
+            <Link
+              href="/"
+              className="flex items-center gap-2 font-semibold text-foreground"
+            >
               <Building2 className="h-5 w-5 shrink-0" />
               <span>Permit Portal</span>
             </Link>
             {isMobile ? (
-              <Button variant="ghost" size="icon" onClick={onClose} className="h-8 w-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onClose}
+                className="h-8 w-8"
+              >
                 <X className="h-4 w-4" />
               </Button>
             ) : (
-              <Button variant="ghost" size="icon" onClick={onToggle} className="h-8 w-8">
+              <Button
+                variant="ghost"
+                size="icon"
+                onClick={onToggle}
+                className="h-8 w-8"
+              >
                 <ChevronLeft className="h-4 w-4" />
               </Button>
             )}
           </>
         ) : (
-          <Button variant="ghost" size="icon" onClick={onToggle} className="h-8 w-8">
+          <Button
+            variant="ghost"
+            size="icon"
+            onClick={onToggle}
+            className="h-8 w-8"
+          >
             <ChevronRight className="h-4 w-4" />
           </Button>
         )}
@@ -110,12 +133,13 @@ function SidebarContent({
       <ScrollArea className="flex-1 py-2">
         <nav className="flex flex-col gap-1 px-2">
           {navItems
-            .filter(item => item.roles.includes(user.role))
-            .map(item => {
-              const isActive = pathname === item.href || pathname.startsWith(item.href + '/')
-              const Icon = ICON_MAP[item.icon]
+            .filter((item) => item.roles.includes(user.role))
+            .map((item) => {
+              const isActive =
+                pathname === item.href || pathname.startsWith(item.href + "/");
+              const Icon = ICON_MAP[item.icon];
 
-              if (!Icon) return null
+              if (!Icon) return null;
 
               if (!expanded) {
                 return (
@@ -125,10 +149,10 @@ function SidebarContent({
                         <Link
                           href={item.href}
                           className={cn(
-                            'flex items-center justify-center h-9 w-9 rounded-md mx-auto transition-colors',
+                            "flex items-center justify-center h-9 w-9 rounded-md mx-auto transition-colors",
                             isActive
-                              ? 'bg-accent text-accent-foreground'
-                              : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                              ? "bg-accent text-accent-foreground"
+                              : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                           )}
                         >
                           <Icon className="h-4 w-4 shrink-0" />
@@ -137,7 +161,7 @@ function SidebarContent({
                       <TooltipContent side="right">{item.label}</TooltipContent>
                     </Tooltip>
                   </TooltipProvider>
-                )
+                );
               }
 
               return (
@@ -145,16 +169,16 @@ function SidebarContent({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    'flex items-center gap-3 px-3 h-9 rounded-md text-sm transition-colors',
+                    "flex items-center gap-3 px-3 h-9 rounded-md text-sm transition-colors",
                     isActive
-                      ? 'bg-accent text-accent-foreground font-medium'
-                      : 'text-muted-foreground hover:bg-accent/50 hover:text-foreground',
+                      ? "bg-accent text-accent-foreground font-medium"
+                      : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
                   )}
                 >
                   <Icon className="h-4 w-4 shrink-0" />
                   <span>{item.label}</span>
                 </Link>
-              )
+              );
             })}
         </nav>
       </ScrollArea>
@@ -162,17 +186,22 @@ function SidebarContent({
       {/* User section */}
       <div className="shrink-0 pb-2">
         <Separator className="mb-2" />
-        <div className={cn('px-2', expanded ? '' : 'flex justify-center')}>
+        <div className={cn("px-2", expanded ? "" : "flex justify-center")}>
           {expanded ? (
             <div className="flex items-center gap-3 px-3 py-2 rounded-md">
               <Avatar className="h-8 w-8 shrink-0">
                 <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-medium truncate">{user.name}</span>
+                <span className="text-sm font-medium truncate">
+                  {user.name}
+                </span>
                 <Badge
                   variant="outline"
-                  className={cn('text-xs px-1.5 py-0 w-fit mt-0.5 border-0', roleConfig.badgeClass)}
+                  className={cn(
+                    "text-xs px-1.5 py-0 w-fit mt-0.5 border-0",
+                    roleConfig.badgeClass,
+                  )}
                 >
                   {roleConfig.label}
                 </Badge>
@@ -184,7 +213,9 @@ function SidebarContent({
                 <TooltipTrigger asChild>
                   <div className="flex items-center justify-center py-2 cursor-default">
                     <Avatar className="h-8 w-8">
-                      <AvatarFallback className="text-xs">{initials}</AvatarFallback>
+                      <AvatarFallback className="text-xs">
+                        {initials}
+                      </AvatarFallback>
                     </Avatar>
                   </div>
                 </TooltipTrigger>
@@ -195,28 +226,18 @@ function SidebarContent({
         </div>
 
         {/* Sign out */}
-        <div className={cn('px-2 mt-1', !expanded && 'flex justify-center')}>
+        <div className={cn("px-2 mt-1", !expanded && "flex justify-center")}>
           {expanded ? (
-            <Button
-              variant="ghost"
-              className="w-full justify-start gap-3 px-3 text-muted-foreground hover:text-foreground"
-              onClick={() => console.log('sign out — Auth.js wired later')}
-            >
-              <LogOut className="h-4 w-4 shrink-0" />
-              <span className="text-sm">Sign out</span>
-            </Button>
+            <SignOutButton
+              showIcon
+              showLabel
+              className="w-full justify-start"
+            />
           ) : (
             <TooltipProvider delayDuration={0}>
               <Tooltip>
                 <TooltipTrigger asChild>
-                  <Button
-                    variant="ghost"
-                    size="icon"
-                    className="h-9 w-9 text-muted-foreground hover:text-foreground"
-                    onClick={() => console.log('sign out — Auth.js wired later')}
-                  >
-                    <LogOut className="h-4 w-4" />
-                  </Button>
+                  <SignOutButton showIcon showLabel={false} />
                 </TooltipTrigger>
                 <TooltipContent side="right">Sign out</TooltipContent>
               </Tooltip>
@@ -225,7 +246,7 @@ function SidebarContent({
         </div>
       </div>
     </div>
-  )
+  );
 }
 
 export function Sidebar({
@@ -241,9 +262,9 @@ export function Sidebar({
       {/* Desktop sidebar */}
       <aside
         className={cn(
-          'hidden md:flex flex-col h-screen bg-sidebar border-r border-sidebar-border shrink-0',
-          'transition-all duration-300 ease-in-out',
-          isCollapsed ? 'w-16' : 'w-60',
+          "hidden md:flex flex-col h-screen bg-sidebar border-r border-sidebar-border shrink-0",
+          "transition-all duration-300 ease-in-out",
+          isCollapsed ? "w-16" : "w-60",
         )}
       >
         <SidebarContent
@@ -257,7 +278,10 @@ export function Sidebar({
 
       {/* Mobile sidebar — Sheet drawer */}
       <Sheet open={isMobileOpen} onOpenChange={onMobileClose}>
-        <SheetContent side="left" className="w-[280px] p-0 bg-sidebar border-sidebar-border">
+        <SheetContent
+          side="left"
+          className="w-[280px] p-0 bg-sidebar border-sidebar-border"
+        >
           <SidebarContent
             navItems={navItems}
             user={user}
@@ -269,5 +293,5 @@ export function Sidebar({
         </SheetContent>
       </Sheet>
     </>
-  )
+  );
 }
