@@ -1,12 +1,12 @@
 "use client";
 
 import { useState } from "react";
-import { useRouter } from "next/navigation";
+import { useRouter, useSearchParams } from "next/navigation";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { signIn } from "next-auth/react";
 import { getSession } from "next-auth/react";
-import { Eye, EyeOff } from "lucide-react";
+import { Eye, EyeOff, CheckCircle } from "lucide-react";
 import Link from "next/link";
 import Image from "next/image";
 import { loginSchema, type LoginValues } from "@/lib/validations/auth.schema";
@@ -37,6 +37,9 @@ function getErrorMessage(error: string): string {
 
 export default function LoginPage() {
   const router = useRouter();
+  const searchParams = useSearchParams();
+  const resetSuccess = searchParams.get("reset") === "success";
+
   const [error, setError] = useState<string | null>(null);
   const [showPassword, setShowPassword] = useState(false);
 
@@ -65,6 +68,7 @@ export default function LoginPage() {
     const role = session?.user?.role as Role | undefined;
     router.push(getRedirectUrl(role ?? "applicant"));
   }
+
   return (
     <div className="h-screen grid grid-cols-1 lg:grid-cols-2 overflow-hidden">
       {/* Left — full-bleed image panel */}
@@ -89,17 +93,26 @@ export default function LoginPage() {
           </p>
         </div>
       </div>
+
       {/* Right — centered form panel */}
       <div className="h-full flex items-center justify-center px-6 py-12 overflow-y-auto bg-background">
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-1">
-            <h1 className="text-2xl font-semibold tracking-tight">
-              Create an account
-            </h1>
+            <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
             <p className="text-sm text-muted-foreground">
-              Enter your details to get started
+              Enter your details to continue
             </p>
           </div>
+
+          {resetSuccess && (
+            <Alert>
+              <CheckCircle className="h-4 w-4" />
+              <AlertDescription>
+                Password reset successfully. You can now sign in with your new
+                password.
+              </AlertDescription>
+            </Alert>
+          )}
 
           {error && (
             <Alert variant="destructive">
