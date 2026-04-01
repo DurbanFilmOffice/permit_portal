@@ -254,7 +254,7 @@ When the approval workflow requires a new reviewer role, here is the
 complete checklist — no migrations needed:
 
 1. Add the new role string to the `ROLES` array in `src/lib/validations/roles.ts`
-2. Update `src/middleware.ts` — add the new role to whichever route groups it should access
+2. Update `src/proxy.ts` — add the new role to whichever route groups it should access
 3. Update sidebar nav items in the relevant layout if the new role needs
    different navigation
 4. Add the role badge colour in `sidebar.tsx` (the role badge switch/map)
@@ -397,11 +397,11 @@ Phase 2 — Layout shell
   4. shadcn init + theme (dark first, Zinc)
   5. ThemeProvider, Sidebar (collapsible desktop + Sheet drawer mobile), Header, DashboardShell
   6. Route group layouts: (auth), (applicant), (admin) + placeholder pages + root redirect
-  7. Middleware skeleton (passthrough until Auth.js is configured)
+  7. Proxy skeleton (passthrough until Auth.js is configured)
 
 Phase 3 — Authentication
   8. Register + email verification
-  9. Login + sessions + real middleware (RBAC)
+  9. Login + sessions + real proxy (RBAC)
   10. Forgot / reset password
 
 Phase 4 — Citizen permit flow

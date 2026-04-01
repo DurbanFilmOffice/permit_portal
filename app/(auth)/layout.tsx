@@ -10,8 +10,12 @@ export default function AuthLayout({
 }) {
   const pathname = usePathname();
   const isRegister = pathname === "/register";
+  const isLogin = pathname === "/login";
 
   if (isRegister) {
+    return <>{children}</>;
+  }
+  if (isLogin) {
     return <>{children}</>;
   }
 
