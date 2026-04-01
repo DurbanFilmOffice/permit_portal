@@ -14,3 +14,10 @@ export function getVerificationTokenExpiry(): Date {
   expiry.setHours(expiry.getHours() + 24)
   return expiry
 }
+
+export function getResetTokenExpiry(): Date {
+  // 1 hour from now — shorter than email verification (24h)
+  const expiry = new Date()
+  expiry.setHours(expiry.getHours() + 1)
+  return expiry
+}
