@@ -106,7 +106,7 @@ Key distinctions:
 
 - Workflow engine (`workflow.service.ts` exists as stubs — see `.claude/architecture.md`)
 - Permit form fields (form structure TBD — `form_data jsonb` is the placeholder)
-- Auth.js (middleware is passthrough skeleton — add after scaffold is reviewed)
+- Auth.js (proxy is passthrough skeleton — add after scaffold is reviewed)
 - Redis / job queue (synchronous email sends are fine for MVP)
 - WebSocket notifications (polling every 30s is sufficient)
 - Comment threading (flat list only)
