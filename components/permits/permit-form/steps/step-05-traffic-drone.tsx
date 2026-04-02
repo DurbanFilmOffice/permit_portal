@@ -33,7 +33,7 @@ export function Step05TrafficDrone({ form }: Props) {
         name="formData.requiresTrafficControl"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Requires Traffic Control{" "}
               <span className="text-destructive">*</span>
             </FormLabel>
@@ -48,7 +48,7 @@ export function Step05TrafficDrone({ form }: Props) {
                 <SelectItem value="no">No</SelectItem>
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -56,21 +56,23 @@ export function Step05TrafficDrone({ form }: Props) {
       {/* Conditional traffic control fields */}
       {requiresTrafficControl === "yes" && (
         <div className="space-y-6 rounded-md border border-input p-4">
-          <p className="text-sm font-medium">Traffic Control Details</p>
+          <p className="text-base font-medium">Traffic Control Details</p>
 
           <FormField
             control={form.control}
             name="formData.roadIntersectionName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Road / Intersection Name</FormLabel>
+                <FormLabel className="text-base font-medium">
+                  Road / Intersection Name
+                </FormLabel>
                 <FormControl>
                   <Input
                     placeholder="Name of road or intersection"
                     {...field}
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-sm" />
               </FormItem>
             )}
           />
@@ -80,11 +82,13 @@ export function Step05TrafficDrone({ form }: Props) {
             name="formData.dateTrafficControlRequired"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Date Traffic Control Required</FormLabel>
+                <FormLabel className="text-base font-medium">
+                  Date Traffic Control Required
+                </FormLabel>
                 <FormControl>
                   <Input type="date" {...field} />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-sm" />
               </FormItem>
             )}
           />
@@ -95,11 +99,13 @@ export function Step05TrafficDrone({ form }: Props) {
               name="formData.trafficControlStartDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Traffic Control Start Date</FormLabel>
+                  <FormLabel className="text-base font-medium">
+                    Traffic Control Start Date
+                  </FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-sm" />
                 </FormItem>
               )}
             />
@@ -109,11 +115,13 @@ export function Step05TrafficDrone({ form }: Props) {
               name="formData.trafficControlEndDate"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Traffic Control End Date</FormLabel>
+                  <FormLabel className="text-base font-medium">
+                    Traffic Control End Date
+                  </FormLabel>
                   <FormControl>
                     <Input type="date" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-sm" />
                 </FormItem>
               )}
             />
@@ -124,11 +132,13 @@ export function Step05TrafficDrone({ form }: Props) {
             name="formData.trafficStartTimeAndWrapTime"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Traffic Control Start &amp; Wrap Time</FormLabel>
+                <FormLabel className="text-base font-medium">
+                  Traffic Control Start &amp; Wrap Time
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="e.g. 06:00 – 18:00" {...field} />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-sm" />
               </FormItem>
             )}
           />
@@ -141,7 +151,7 @@ export function Step05TrafficDrone({ form }: Props) {
         name="formData.involveDroneFilming"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Does the production involve drone filming?{" "}
               <span className="text-destructive">*</span>
             </FormLabel>
@@ -156,9 +166,9 @@ export function Step05TrafficDrone({ form }: Props) {
                 <SelectItem value="no">No</SelectItem>
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="text-sm" />
             {field.value === "yes" && (
-              <p className="text-xs text-muted-foreground mt-1">
+              <p className="text-sm text-muted-foreground mt-1">
                 A Drone Filming step will be added to your application.
               </p>
             )}

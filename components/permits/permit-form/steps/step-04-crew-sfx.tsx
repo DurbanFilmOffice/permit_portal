@@ -34,7 +34,9 @@ export function Step04CrewSfx({ form }: Props) {
           name="formData.numberOfCrew"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Number of Crew</FormLabel>
+              <FormLabel className="text-base font-medium">
+                Number of Crew
+              </FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -51,7 +53,7 @@ export function Step04CrewSfx({ form }: Props) {
                   }
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-sm" />
             </FormItem>
           )}
         />
@@ -62,7 +64,9 @@ export function Step04CrewSfx({ form }: Props) {
           name="formData.numberOfCars"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Number of Cars</FormLabel>
+              <FormLabel className="text-base font-medium">
+                Number of Cars
+              </FormLabel>
               <FormControl>
                 <Input
                   type="number"
@@ -79,7 +83,7 @@ export function Step04CrewSfx({ form }: Props) {
                   }
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-sm" />
             </FormItem>
           )}
         />
@@ -90,14 +94,16 @@ export function Step04CrewSfx({ form }: Props) {
           name="formData.numberOfCast"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Number of Cast</FormLabel>
+              <FormLabel className="text-base font-medium">
+                Number of Cast
+              </FormLabel>
               <FormControl>
                 <Input
                   placeholder="e.g. 4 principal + 12 supporting"
                   {...field}
                 />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-sm" />
             </FormItem>
           )}
         />
@@ -108,11 +114,13 @@ export function Step04CrewSfx({ form }: Props) {
           name="formData.numberOfExtras"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>Number of Extras</FormLabel>
+              <FormLabel className="text-base font-medium">
+                Number of Extras
+              </FormLabel>
               <FormControl>
                 <Input placeholder="e.g. 50" {...field} />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-sm" />
             </FormItem>
           )}
         />
@@ -124,7 +132,7 @@ export function Step04CrewSfx({ form }: Props) {
         name="formData.requiresSfxPermit"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Requires SFX Permit <span className="text-destructive">*</span>
             </FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -138,7 +146,7 @@ export function Step04CrewSfx({ form }: Props) {
                 <SelectItem value="no">No</SelectItem>
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -146,18 +154,20 @@ export function Step04CrewSfx({ form }: Props) {
       {/* Conditional SFX fields */}
       {requiresSfx === "yes" && (
         <div className="space-y-6 rounded-md border border-input p-4">
-          <p className="text-sm font-medium">SFX Details</p>
+          <p className="text-base font-medium">SFX Details</p>
 
           <FormField
             control={form.control}
             name="formData.gunSupervisorName"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Gun Supervisor Name</FormLabel>
+                <FormLabel className="text-base font-medium">
+                  Gun Supervisor Name
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Full name" {...field} />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-sm" />
               </FormItem>
             )}
           />
@@ -167,11 +177,13 @@ export function Step04CrewSfx({ form }: Props) {
             name="formData.sfxGunSupervisorContact"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Gun Supervisor Contact</FormLabel>
+                <FormLabel className="text-base font-medium">
+                  Gun Supervisor Contact
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Phone or email" {...field} />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-sm" />
               </FormItem>
             )}
           />
@@ -181,11 +193,13 @@ export function Step04CrewSfx({ form }: Props) {
             name="formData.initiationDetails"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Initiation Details</FormLabel>
+                <FormLabel className="text-base font-medium">
+                  Initiation Details
+                </FormLabel>
                 <FormControl>
                   <Input placeholder="Details of initiation" {...field} />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-sm" />
               </FormItem>
             )}
           />
@@ -196,11 +210,13 @@ export function Step04CrewSfx({ form }: Props) {
               name="formData.numberOfRounds"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Number of Rounds</FormLabel>
+                  <FormLabel className="text-base font-medium">
+                    Number of Rounds
+                  </FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. 20" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-sm" />
                 </FormItem>
               )}
             />
@@ -210,11 +226,13 @@ export function Step04CrewSfx({ form }: Props) {
               name="formData.numberOfResets"
               render={({ field }) => (
                 <FormItem>
-                  <FormLabel>Number of Resets</FormLabel>
+                  <FormLabel className="text-base font-medium">
+                    Number of Resets
+                  </FormLabel>
                   <FormControl>
                     <Input placeholder="e.g. 3" {...field} />
                   </FormControl>
-                  <FormMessage />
+                  <FormMessage className="text-sm" />
                 </FormItem>
               )}
             />

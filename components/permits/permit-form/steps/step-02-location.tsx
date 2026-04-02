@@ -34,13 +34,13 @@ export function Step02Location({ form }: Props) {
         name="formData.locationName"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Location Name <span className="text-destructive">*</span>
             </FormLabel>
             <FormControl>
               <Input placeholder="Name of filming location" {...field} />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -51,7 +51,7 @@ export function Step02Location({ form }: Props) {
         name="formData.locationAddress"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Location Address <span className="text-destructive">*</span>
             </FormLabel>
             <FormControl>
@@ -60,12 +60,11 @@ export function Step02Location({ form }: Props) {
                 {...field}
                 onChange={(e) => {
                   field.onChange(e);
-                  // Keep siteAddress in sync — it maps to the DB column
                   form.setValue("siteAddress", e.target.value);
                 }}
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -76,13 +75,13 @@ export function Step02Location({ form }: Props) {
         name="formData.applicantContactNumber"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Contact Number <span className="text-destructive">*</span>
             </FormLabel>
             <FormControl>
               <Input type="tel" placeholder="+27 00 000 0000" {...field} />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -94,13 +93,13 @@ export function Step02Location({ form }: Props) {
           name="formData.startTime"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
+              <FormLabel className="text-base font-medium">
                 Start Time <span className="text-destructive">*</span>
               </FormLabel>
               <FormControl>
                 <Input type="time" {...field} />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-sm" />
             </FormItem>
           )}
         />
@@ -111,13 +110,13 @@ export function Step02Location({ form }: Props) {
           name="formData.wrapTime"
           render={({ field }) => (
             <FormItem>
-              <FormLabel>
+              <FormLabel className="text-base font-medium">
                 Wrap Time <span className="text-destructive">*</span>
               </FormLabel>
               <FormControl>
                 <Input type="time" {...field} />
               </FormControl>
-              <FormMessage />
+              <FormMessage className="text-sm" />
             </FormItem>
           )}
         />
@@ -129,7 +128,7 @@ export function Step02Location({ form }: Props) {
         name="formData.genre"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Genre <span className="text-destructive">*</span>
             </FormLabel>
             <Select onValueChange={field.onChange} defaultValue={field.value}>
@@ -146,7 +145,7 @@ export function Step02Location({ form }: Props) {
                 ))}
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />

@@ -33,15 +33,26 @@ export function StatusBadge({ status }: StatusBadgeProps) {
 
   if (!config) {
     const label = status.charAt(0).toUpperCase() + status.slice(1);
-    return <Badge variant="secondary">{label}</Badge>;
+    return (
+      <Badge variant="secondary" className="text-sm font-medium">
+        {label}
+      </Badge>
+    );
   }
 
   if (!config.className) {
-    return <Badge variant="secondary">{config.label}</Badge>;
+    return (
+      <Badge variant="secondary" className="text-sm font-medium">
+        {config.label}
+      </Badge>
+    );
   }
 
   return (
-    <Badge variant="secondary" className={config.className}>
+    <Badge
+      variant="secondary"
+      className={`text-sm font-medium ${config.className}`}
+    >
       {config.label}
     </Badge>
   );
