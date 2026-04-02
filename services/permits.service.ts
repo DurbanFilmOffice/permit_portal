@@ -3,6 +3,7 @@ import { isInternalRole } from "@/lib/validations/roles";
 import type { Role } from "@/lib/validations/roles";
 import { permitDocumentsRepository } from "@/repositories/permit-documents.repository";
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
+import { permitStatusHistoryRepository } from "@/repositories/permit-status-history.repository";
 
 export const permitsService = {
   async getUserPermits(userId: string) {
@@ -80,5 +81,14 @@ export const permitsService = {
     // await notificationsService.onPermitSubmitted(submitted)
 
     return submitted;
+  },
+
+  async getPermitDetail(id: string, userId: string, userRole: Role) {
+    const [permit, history, documents] = await Promise.all([
+      permitsService.getPermitById(id, userId, userRole),
+      permitStatusHistoryRepository.findByPermit(id),
+      permitDocumentsRepository.findByPermit(id),
+    ]);
+    return { permit, history, documents };
   },
 };
