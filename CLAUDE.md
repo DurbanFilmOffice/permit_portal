@@ -24,7 +24,9 @@ These apply to every task, every file, every session. Never break them.
 5. **No `any`.** TypeScript strict mode throughout.
 6. **No new packages without confirmation.** Use what is already installed.
 7. **Workflow engine is not built yet.** `workflow.service.ts` is stubs only. Do not implement it.
-8. **Permit form is not defined yet.** `form_data` is jsonb. Do not add individual field columns.
+8. **Permit form fields all go in `form_data` jsonb.** Never add individual form field columns.
+   The only exceptions are `project_name` and `site_address` which are already proper columns.
+   See `.claude/architecture.md` for the full field definitions and Zod schema shape.
 9. **Internal notes are never visible to applicants.** `application_notes` is a separate table from `permit_comments`. Never query notes in any applicant-facing context. Enforced at service AND repository layer.
 10. **`external_user` cannot access the applicant comment thread.** Block in `comments.service.ts` — not just in the UI.
 11. **Applicants are never in `permit_assignments`.** The assignment table is for internal users only. Check role before inserting.
@@ -105,7 +107,8 @@ Key distinctions:
 ## Not built yet — do not implement
 
 - Workflow engine (`workflow.service.ts` exists as stubs — see `.claude/architecture.md`)
-- Permit form fields (form structure TBD — `form_data jsonb` is the placeholder)
+- Permit form submission logic (form fields are now defined in `.claude/architecture.md`
+  — build the form UI in Phase 4 session 12)
 - Auth.js (proxy is passthrough skeleton — add after scaffold is reviewed)
 - Redis / job queue (synchronous email sends are fine for MVP)
 - WebSocket notifications (polling every 30s is sufficient)

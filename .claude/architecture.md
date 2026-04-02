@@ -381,7 +381,204 @@ src/components/permits/permit-form/
   permit-form-navigation.tsx  ← prev/next/submit + progress indicator
 ```
 
-Zod schema location: `src/lib/validations/permit-form.schema.ts` (create when form is defined)
+Zod schema location: `src/lib/validations/permit-form.schema.ts`
+
+---
+
+## Permit form — field definitions
+
+The permit application form is a **multi-step wizard** with 6 steps.
+Step 6 (Drone) is conditional — only shown if step 5 drone answer is Yes.
+All fields map to `form_data jsonb` on the permits table unless noted.
+
+Fields marked with * are required. All others are optional.
+
+### Structured DB columns (NOT in form_data)
+These are queryable/filterable so they live as proper columns:
+  permit_type    → derived from form context (always 'filming_permit' for now)
+  project_name   → maps to permits.project_name (required)
+  site_address   → maps to permits.site_address (from Location Address field)
+  description    → maps to permits.description (optional summary)
+
+### Step 1 — Project details
+```
+companyName*          text        free text input
+projectTitle*         text        → maps to permits.project_name column
+startDate*            date
+endDate               date        optional
+descriptionOfScenes   richtext    rich text editor (HTML stored as string)
+tags                  text        free text, comma-separated tags
+```
+
+### Step 2 — Location & more information
+```
+locationName*              text
+locationAddress*           text  → maps to permits.site_address column
+applicantContactNumber*    text
+startTime*                 text  (HH:MM format)
+wrapTime*                  text  (HH:MM format)
+genre*                     select  options TBD — store as free text for now
+```
+
+### Step 3 — Equipment & special requirements
+All checkboxes — stored as array of strings in form_data.
+```
+equipment: string[]   checkboxes (multiple selection):
+  'animals'
+  'base_camp'
+  'building_blackout'
+  'camera_crane'
+  'camera_truck'
+  'cherry_pickers'
+  'children'
+  'driving_sequence'
+  'fire_effects'
+  'generator'
+  'lighting_tower'
+  // more items may be added — store as open string array
+```
+
+### Step 4 — Crew & SFX
+```
+numberOfCrew              number    spinner input
+numberOfCars              number    spinner input
+numberOfCast              text      (may include non-numeric values)
+numberOfExtras            text
+requiresSfxPermit*        select    Yes / No
+gunSupervisorName         text      shown when requiresSfxPermit = Yes
+sfxGunSupervisorContact   text      shown when requiresSfxPermit = Yes
+initiationDetails         text      shown when requiresSfxPermit = Yes
+numberOfRounds            text      shown when requiresSfxPermit = Yes
+numberOfResets            text      shown when requiresSfxPermit = Yes
+```
+
+### Step 5 — Traffic control
+```
+requiresTrafficControl*          select    Yes / No
+roadIntersectionName             text      shown when requiresTrafficControl = Yes
+dateTrafficControlRequired       date      shown when requiresTrafficControl = Yes
+trafficControlStartDate          date      shown when requiresTrafficControl = Yes
+trafficControlEndDate            date      shown when requiresTrafficControl = Yes
+trafficStartTimeAndWrapTime      text      shown when requiresTrafficControl = Yes
+involveDroneFilming*             select    Yes / No
+```
+
+### Step 6 — Drone filming (conditional — only shown if involveDroneFilming = Yes)
+```
+proposedActivityDetails      richtext    rich text editor
+droneOperatorHasLicense*     select      Yes / No
+droneProposedActivityDetails richtext    rich text editor
+```
+
+### Step 7 — Documents & submit
+```
+documents    file[]    multiple file upload
+             ← required document types TBD — accept all for now
+             ← stored in Supabase Storage, URLs saved to permit_documents table
+showAfterCreated   boolean   default true (checkbox: "Show project after it's been created")
+```
+
+### Rich text editor
+Use **Tiptap** (already a common Next.js choice, lightweight).
+Install: `bun add @tiptap/react @tiptap/pm @tiptap/starter-kit`
+Stored as HTML string in form_data jsonb.
+Rendered as sanitised HTML on detail/review pages.
+
+### Conditional field rules
+- SFX fields (gun supervisor, initiation, etc.) → visible only when requiresSfxPermit = 'yes'
+- Traffic control fields → visible only when requiresTrafficControl = 'yes'
+- Entire Step 6 (Drone) → only inserted into wizard when involveDroneFilming = 'yes'
+  (answered at the end of Step 5)
+- Drone operator license question → always shown within Step 6
+
+### Genre dropdown options (confirmed)
+```
+'feature_film'      → "Feature Film"
+'documentary'       → "Documentary"
+'reality_show'      → "Video - Reality Show"
+'tv_series'         → "TV Series"
+'tv_commercial'     → "TV Commercial"
+'student_project'   → "Student Project"
+'stills_photography'→ "Stills Photography"
+'short_film'        → "Short Film"
+'music_video'       → "Music Video"
+```
+Note: Feature Film appeared twice in the original list — deduplicated to one entry.
+Store the key (e.g. 'feature_film') in form_data, display the label in the UI.
+
+### Form data Zod schema shape
+```ts
+// src/lib/validations/permit-form.schema.ts
+export const permitFormSchema = z.object({
+  // Structured fields → DB columns
+  projectName:  z.string().min(1),
+  siteAddress:  z.string().min(1),
+
+  // Dynamic fields → form_data jsonb
+  formData: z.object({
+    // Step 1
+    companyName:          z.string().min(1),
+    projectTitle:         z.string().min(1),
+    startDate:            z.string().min(1),
+    endDate:              z.string().optional(),
+    descriptionOfScenes:  z.string().optional(),
+    tags:                 z.string().optional(),
+
+    // Step 2
+    locationName:              z.string().min(1),
+    locationAddress:           z.string().min(1),
+    applicantContactNumber:    z.string().min(1),
+    startTime:                 z.string().min(1),
+    wrapTime:                  z.string().min(1),
+    genre: z.enum([
+      'feature_film', 'documentary', 'reality_show', 'tv_series',
+      'tv_commercial', 'student_project', 'stills_photography',
+      'short_film', 'music_video',
+    ]),
+
+    // Step 3
+    equipment: z.array(z.string()).default([]),
+
+    // Step 4
+    numberOfCrew:             z.number().min(0).optional(),
+    numberOfCars:             z.number().min(0).optional(),
+    numberOfCast:             z.string().optional(),
+    numberOfExtras:           z.string().optional(),
+    requiresSfxPermit:        z.enum(['yes', 'no']),
+    gunSupervisorName:        z.string().optional(),
+    sfxGunSupervisorContact:  z.string().optional(),
+    initiationDetails:        z.string().optional(),
+    numberOfRounds:           z.string().optional(),
+    numberOfResets:           z.string().optional(),
+
+    // Step 5
+    requiresTrafficControl:       z.enum(['yes', 'no']),
+    roadIntersectionName:         z.string().optional(),
+    dateTrafficControlRequired:   z.string().optional(),
+    trafficControlStartDate:      z.string().optional(),
+    trafficControlEndDate:        z.string().optional(),
+    trafficStartTimeAndWrapTime:  z.string().optional(),
+    involveDroneFilming:          z.enum(['yes', 'no']),
+
+    // Step 6 — drone (conditional)
+    proposedActivityDetails:      z.string().optional(),
+    droneOperatorHasLicense:      z.enum(['yes', 'no']).optional(),
+    droneProposedActivityDetails: z.string().optional(),
+
+    // Step 7
+    showAfterCreated: z.boolean().default(true),
+  }),
+})
+export type PermitFormValues = z.infer<typeof permitFormSchema>
+```
+
+### Document upload
+- Multiple files, all types accepted for now
+- On submit: upload each file to Supabase Storage bucket 'permit-documents'
+- Path pattern: `permits/{permitId}/{filename}`
+- Insert one row per file into permit_documents table
+- File URLs stored as permit_documents.file_url
+- Required document types to be confirmed by client — accept all for now
 
 ---
 
