@@ -92,7 +92,7 @@ function SidebarContent({
           <>
             <Link
               href="/"
-              className="flex items-center gap-2 font-semibold text-foreground"
+              className="flex items-center gap-2 text-lg font-semibold text-foreground"
             >
               <Building2 className="h-5 w-5 shrink-0" />
               <span>Permit Portal</span>
@@ -169,7 +169,7 @@ function SidebarContent({
                   key={item.href}
                   href={item.href}
                   className={cn(
-                    "flex items-center gap-3 px-3 h-9 rounded-md text-sm transition-colors",
+                    "flex items-center gap-3 px-3 h-9 rounded-md text-base transition-colors",
                     isActive
                       ? "bg-accent text-accent-foreground font-medium"
                       : "text-muted-foreground hover:bg-accent/50 hover:text-foreground",
@@ -193,7 +193,7 @@ function SidebarContent({
                 <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
               <div className="flex flex-col min-w-0">
-                <span className="text-sm font-medium truncate">
+                <span className="text-base font-medium truncate">
                   {user.name}
                 </span>
                 <Badge
@@ -231,7 +231,7 @@ function SidebarContent({
             <SignOutButton
               showIcon
               showLabel
-              className="w-full justify-start"
+              className="w-full justify-start text-base"
             />
           ) : (
             <TooltipProvider delayDuration={0}>

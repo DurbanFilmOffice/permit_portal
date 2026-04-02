@@ -51,7 +51,7 @@ export function Step03Equipment({ form }: Props) {
                     />
                     <Label
                       htmlFor={`equipment-${option.value}`}
-                      className="cursor-pointer font-normal"
+                      className="text-base cursor-pointer font-normal"
                     >
                       {option.label}
                     </Label>

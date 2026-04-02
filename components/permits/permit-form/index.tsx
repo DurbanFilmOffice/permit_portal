@@ -274,8 +274,9 @@ export default function PermitForm() {
                 <li key={step.id} className="flex items-center gap-2">
                   <div
                     className={cn(
-                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-xs font-medium transition-colors",
-                      isCurrent && "bg-primary text-primary-foreground",
+                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors",
+                      isCurrent &&
+                        "bg-primary text-primary-foreground font-medium",
                       isCompleted && !isCurrent && "bg-primary/10 text-primary",
                       !isCurrent &&
                         !isCompleted &&
@@ -313,14 +314,14 @@ export default function PermitForm() {
               aria-valuemax={totalSteps}
             />
           </div>
-          <p className="mt-1 text-xs text-muted-foreground">
+          <p className="mt-1 text-sm text-muted-foreground">
             Step {currentStep} of {totalSteps}
           </p>
         </nav>
 
         {/* Step content */}
         <div className="rounded-lg border bg-card p-6 shadow-sm">
-          <h2 className="mb-6 text-lg font-semibold">
+          <h2 className="mb-6 text-xl font-semibold">
             {currentStepConfig.title}
           </h2>
           {renderStep()}

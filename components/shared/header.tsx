@@ -50,7 +50,7 @@ export function Header({ title, user, onMobileMenuOpen }: HeaderProps) {
         >
           <Menu className="h-4 w-4" />
         </Button>
-        <h1 className="text-lg font-semibold">{title}</h1>
+        <h1 className="text-xl font-semibold">{title}</h1>
       </div>
 
       {/* Right */}
@@ -83,15 +83,15 @@ export function Header({ title, user, onMobileMenuOpen }: HeaderProps) {
               <Avatar className="h-8 w-8">
                 <AvatarFallback className="text-xs">{initials}</AvatarFallback>
               </Avatar>
-              <span className="hidden md:block text-sm">{user.name}</span>
+              <span className="hidden md:block text-base">{user.name}</span>
               <ChevronDown className="hidden md:block h-4 w-4 text-muted-foreground" />
             </Button>
           </DropdownMenuTrigger>
           <DropdownMenuContent align="end" className="w-56">
             <DropdownMenuLabel className="font-normal">
               <div className="flex flex-col gap-0.5">
-                <span className="text-sm font-medium">{user.name}</span>
-                <span className="text-xs text-muted-foreground">
+                <span className="text-base font-medium">{user.name}</span>
+                <span className="text-sm text-muted-foreground">
                   {user.email}
                 </span>
               </div>
@@ -102,7 +102,7 @@ export function Header({ title, user, onMobileMenuOpen }: HeaderProps) {
                 href="/account"
                 className="flex items-center gap-2 cursor-pointer"
               >
-                <UserCircle className="h-4 w-4" />
+                <UserCircle className="h-4 w-4 text-base" />
                 Account settings
               </Link>
             </DropdownMenuItem>
@@ -111,7 +111,7 @@ export function Header({ title, user, onMobileMenuOpen }: HeaderProps) {
               <SignOutButton
                 showIcon
                 showLabel
-                className="w-full cursor-pointer text-destructive focus:text-destructive"
+                className="w-full text-base cursor-pointer"
               />
             </DropdownMenuItem>
           </DropdownMenuContent>

@@ -31,7 +31,9 @@ export function Step06Drone({ form }: Props) {
         name="formData.proposedActivityDetails"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Proposed Activity Details</FormLabel>
+            <FormLabel className="text-base font-medium">
+              Proposed Activity Details
+            </FormLabel>
             <FormControl>
               <RichTextEditor
                 value={field.value ?? ""}
@@ -39,7 +41,7 @@ export function Step06Drone({ form }: Props) {
                 placeholder="Describe the proposed drone activity…"
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -50,7 +52,7 @@ export function Step06Drone({ form }: Props) {
         name="formData.droneOperatorHasLicense"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Does the drone operator have a valid license?{" "}
               <span className="text-destructive">*</span>
             </FormLabel>
@@ -65,7 +67,7 @@ export function Step06Drone({ form }: Props) {
                 <SelectItem value="no">No</SelectItem>
               </SelectContent>
             </Select>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -76,7 +78,9 @@ export function Step06Drone({ form }: Props) {
         name="formData.droneProposedActivityDetails"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Drone Proposed Activity Details</FormLabel>
+            <FormLabel className="text-base font-medium">
+              Drone Proposed Activity Details
+            </FormLabel>
             <FormControl>
               <RichTextEditor
                 value={field.value ?? ""}
@@ -84,7 +88,7 @@ export function Step06Drone({ form }: Props) {
                 placeholder="Additional details about the drone activity…"
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />

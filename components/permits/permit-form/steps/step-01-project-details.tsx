@@ -37,13 +37,13 @@ export function Step01ProjectDetails({ form }: Props) {
         name="formData.companyName"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Company Name <span className="text-destructive">*</span>
             </FormLabel>
             <FormControl>
               <Input placeholder="Production company name" {...field} />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -54,7 +54,7 @@ export function Step01ProjectDetails({ form }: Props) {
         name="formData.projectTitle"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Project Title <span className="text-destructive">*</span>
             </FormLabel>
             <FormControl>
@@ -63,12 +63,11 @@ export function Step01ProjectDetails({ form }: Props) {
                 {...field}
                 onChange={(e) => {
                   field.onChange(e);
-                  // Keep projectName in sync — it maps to the DB column
                   form.setValue("projectName", e.target.value);
                 }}
               />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -79,13 +78,13 @@ export function Step01ProjectDetails({ form }: Props) {
         name="formData.startDate"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>
+            <FormLabel className="text-base font-medium">
               Start Date <span className="text-destructive">*</span>
             </FormLabel>
             <FormControl>
               <Input type="date" {...field} />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -96,11 +95,11 @@ export function Step01ProjectDetails({ form }: Props) {
         name="formData.endDate"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>End Date</FormLabel>
+            <FormLabel className="text-base font-medium">End Date</FormLabel>
             <FormControl>
               <Input type="date" {...field} />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />
@@ -113,7 +112,9 @@ export function Step01ProjectDetails({ form }: Props) {
             checked={showDescription}
             onCheckedChange={handleToggleDescription}
           />
-          <Label htmlFor="description-toggle">Add description of scenes</Label>
+          <Label htmlFor="description-toggle" className="text-base">
+            Add description of scenes
+          </Label>
         </div>
 
         {showDescription && (
@@ -122,7 +123,9 @@ export function Step01ProjectDetails({ form }: Props) {
             name="formData.descriptionOfScenes"
             render={({ field }) => (
               <FormItem>
-                <FormLabel>Description of Scenes</FormLabel>
+                <FormLabel className="text-base font-medium">
+                  Description of Scenes
+                </FormLabel>
                 <FormControl>
                   <RichTextEditor
                     value={field.value ?? ""}
@@ -130,7 +133,7 @@ export function Step01ProjectDetails({ form }: Props) {
                     placeholder="Describe the scenes to be filmed…"
                   />
                 </FormControl>
-                <FormMessage />
+                <FormMessage className="text-sm" />
               </FormItem>
             )}
           />
@@ -143,11 +146,11 @@ export function Step01ProjectDetails({ form }: Props) {
         name="formData.tags"
         render={({ field }) => (
           <FormItem>
-            <FormLabel>Tags</FormLabel>
+            <FormLabel className="text-base font-medium">Tags</FormLabel>
             <FormControl>
               <Input placeholder="Comma-separated tags (optional)" {...field} />
             </FormControl>
-            <FormMessage />
+            <FormMessage className="text-sm" />
           </FormItem>
         )}
       />

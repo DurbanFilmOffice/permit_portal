@@ -42,36 +42,36 @@ const columns: ColumnDef<Permit>[] = [
   {
     id: "reference",
     accessorFn: (row) => row.id.slice(0, 8).toUpperCase(),
-    header: "Ref #",
+    header: () => <span className="text-base font-medium">Ref #</span>,
     cell: ({ getValue }) => (
-      <span className="font-mono text-sm">{getValue<string>()}</span>
+      <span className="font-mono text-base">{getValue<string>()}</span>
     ),
   },
   {
     accessorKey: "projectName",
-    header: "Project",
+    header: () => <span className="text-base font-medium">Project</span>,
     cell: ({ getValue }) => (
       <span className="font-medium">{getValue<string>()}</span>
     ),
   },
   {
     accessorKey: "permitType",
-    header: "Type",
+    header: () => <span className="text-base font-medium">Type</span>,
     cell: ({ getValue }) => formatPermitType(getValue<string>()),
   },
   {
     accessorKey: "status",
-    header: "Status",
+    header: () => <span className="text-base font-medium">Status</span>,
     cell: ({ getValue }) => <StatusBadge status={getValue<string>()} />,
   },
   {
     accessorKey: "submittedAt",
-    header: "Submitted",
+    header: () => <span className="text-base font-medium">Submitted</span>,
     cell: ({ getValue }) => formatDate(getValue<Date | string | null>()),
   },
   {
     id: "actions",
-    header: "View",
+    header: () => <span className="text-base font-medium">View</span>,
     enableSorting: false,
     cell: ({ row }) => (
       <Button variant="ghost" size="sm" asChild>
@@ -158,7 +158,7 @@ export default function ApplicationsTable({ permits }: { permits: Permit[] }) {
           {table.getRowModel().rows.map((row) => (
             <TableRow key={row.id}>
               {row.getVisibleCells().map((cell) => (
-                <TableCell key={cell.id}>
+                <TableCell key={cell.id} className="text-base">
                   {flexRender(cell.column.columnDef.cell, cell.getContext())}
                 </TableCell>
               ))}
@@ -178,7 +178,9 @@ export function ApplicationsTableSkeleton() {
           <TableRow>
             {["Ref #", "Project", "Type", "Status", "Submitted", "View"].map(
               (col) => (
-                <TableHead key={col}>{col}</TableHead>
+                <TableHead key={col}>
+                  <span className="text-base font-medium">{col}</span>
+                </TableHead>
               ),
             )}
           </TableRow>

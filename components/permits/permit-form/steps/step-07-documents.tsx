@@ -41,7 +41,6 @@ export function Step07Documents({ form, files, onFilesChange }: Props) {
   const handleFileChange = (e: React.ChangeEvent<HTMLInputElement>) => {
     const selected = Array.from(e.target.files ?? []);
     onFilesChange([...files, ...selected]);
-    // Reset input so the same file can be re-added if removed
     if (inputRef.current) inputRef.current.value = "";
   };
 
@@ -51,10 +50,10 @@ export function Step07Documents({ form, files, onFilesChange }: Props) {
 
   return (
     <div className="space-y-8">
-      {/* ── Application summary (collapsible review) ─────────────────── */}
-      <div className="rounded-md border border-input bg-muted/40 p-4 text-sm space-y-3">
-        <p className="font-medium">Review your application</p>
-        <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5">
+      {/* ── Application summary ───────────────────────────────────────── */}
+      <div className="rounded-md border border-input bg-muted/40 p-4 space-y-3">
+        <p className="text-base font-medium">Review your application</p>
+        <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5 text-sm">
           <span className="text-muted-foreground">Project</span>
           <span className="font-medium">
             {values.formData.projectTitle || "—"}
@@ -87,8 +86,8 @@ export function Step07Documents({ form, files, onFilesChange }: Props) {
       {/* ── Document upload ───────────────────────────────────────────── */}
       <div className="space-y-3">
         <div>
-          <p className="text-sm font-medium">Supporting Documents</p>
-          <p className="text-xs text-muted-foreground mt-0.5">
+          <p className="text-base font-medium">Supporting Documents</p>
+          <p className="text-sm text-muted-foreground mt-0.5">
             Upload any relevant documents. Files will be submitted with your
             application.
           </p>
@@ -158,7 +157,7 @@ export function Step07Documents({ form, files, onFilesChange }: Props) {
               </FormControl>
               <Label
                 htmlFor="showAfterCreated"
-                className="cursor-pointer font-normal"
+                className="text-base cursor-pointer font-normal"
               >
                 Show project after it&apos;s been created
               </Label>
