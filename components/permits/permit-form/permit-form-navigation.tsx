@@ -13,6 +13,7 @@ interface PermitFormNavigationProps {
   isSubmitting: boolean;
   isFirstStep: boolean;
   isLastStep: boolean;
+  submitLabel?: string;
 }
 
 export function PermitFormNavigation({
@@ -22,6 +23,7 @@ export function PermitFormNavigation({
   isSubmitting,
   isFirstStep,
   isLastStep,
+  submitLabel = "Submit Application",
 }: PermitFormNavigationProps) {
   return (
     <div className="flex items-center justify-between">
@@ -61,7 +63,7 @@ export function PermitFormNavigation({
             className="bg-green-600 hover:bg-green-700 text-white"
           >
             {isSubmitting && <Loader2 className="mr-2 h-4 w-4 animate-spin" />}
-            {isSubmitting ? "Submitting…" : "Submit Application"}
+            {isSubmitting ? "Submitting…" : submitLabel}
           </Button>
         )}
       </div>

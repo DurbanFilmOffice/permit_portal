@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import { useForm } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -28,11 +28,7 @@ import { Step07Documents } from "./steps/step-07-documents";
 
 // ─── Step field map — used for per-step validation ───────────────────────────
 
-type PermitFormPath = Parameters<
-  ReturnType<typeof useForm<PermitFormValues>>["trigger"]
->[0];
-
-const STEP_FIELDS: Record<number, PermitFormPath[]> = {
+const STEP_FIELDS: Record<number, string[]> = {
   1: [
     "projectName",
     "formData.companyName",
@@ -94,61 +90,108 @@ const BASE_STEPS = [
 
 const DRONE_STEP = { id: 6, title: "Drone Filming" } as const;
 
+// ─── Props ────────────────────────────────────────────────────────────────────
+
+interface PermitFormProps {
+  mode?: "create" | "edit";
+  permitId?: string;
+  initialData?: PermitFormValues;
+  isReturned?: boolean;
+}
+
+// ─── Empty defaults (create mode) ────────────────────────────────────────────
+
+const EMPTY_DEFAULTS: PermitFormValues = {
+  projectName: "",
+  siteAddress: "",
+  formData: {
+    companyName: "",
+    projectTitle: "",
+    startDate: "",
+    endDate: "",
+    descriptionOfScenes: "",
+    tags: "",
+    locationName: "",
+    locationAddress: "",
+    applicantContactNumber: "",
+    startTime: "",
+    wrapTime: "",
+    genre: undefined as never,
+    equipment: [],
+    numberOfCrew: undefined,
+    numberOfCars: undefined,
+    numberOfCast: "",
+    numberOfExtras: "",
+    requiresSfxPermit: undefined as never,
+    gunSupervisorName: "",
+    sfxGunSupervisorContact: "",
+    initiationDetails: "",
+    numberOfRounds: "",
+    numberOfResets: "",
+    requiresTrafficControl: undefined as never,
+    roadIntersectionName: "",
+    dateTrafficControlRequired: "",
+    trafficControlStartDate: "",
+    trafficControlEndDate: "",
+    trafficStartTimeAndWrapTime: "",
+    involveDroneFilming: undefined as never,
+    proposedActivityDetails: "",
+    droneOperatorHasLicense: undefined,
+    droneProposedActivityDetails: "",
+    showAfterCreated: true,
+  },
+};
+
 // ─── Component ────────────────────────────────────────────────────────────────
 
-export default function PermitForm() {
+export default function PermitForm({
+  mode = "create",
+  permitId: initialPermitId,
+  initialData,
+  isReturned = false,
+}: PermitFormProps) {
   const router = useRouter();
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
-  const [permitId, setPermitId] = useState<string | null>(null);
+  const [permitId, setPermitId] = useState<string | null>(
+    initialPermitId ?? null,
+  );
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [files, setFiles] = useState<File[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
 
+  // Merge initialData safely — guarantees no undefined on required string fields
+  const resolvedDefaults: PermitFormValues = initialData
+    ? {
+        ...initialData,
+        siteAddress: initialData.siteAddress ?? "",
+        projectName: initialData.projectName ?? "",
+        formData: {
+          ...EMPTY_DEFAULTS.formData,
+          ...initialData.formData,
+        },
+      }
+    : EMPTY_DEFAULTS;
+
   const form = useForm<PermitFormValues>({
     resolver: zodResolver(permitFormSchema),
-    defaultValues: {
-      projectName: "",
-      siteAddress: "",
-      formData: {
-        companyName: "",
-        projectTitle: "",
-        startDate: "",
-        endDate: "",
-        descriptionOfScenes: "",
-        tags: "",
-        locationName: "",
-        locationAddress: "",
-        applicantContactNumber: "",
-        startTime: "",
-        wrapTime: "",
-        genre: undefined,
-        equipment: [],
-        numberOfCrew: undefined,
-        numberOfCars: undefined,
-        numberOfCast: "",
-        numberOfExtras: "",
-        requiresSfxPermit: undefined,
-        gunSupervisorName: "",
-        sfxGunSupervisorContact: "",
-        initiationDetails: "",
-        numberOfRounds: "",
-        numberOfResets: "",
-        requiresTrafficControl: undefined,
-        roadIntersectionName: "",
-        dateTrafficControlRequired: "",
-        trafficControlStartDate: "",
-        trafficControlEndDate: "",
-        trafficStartTimeAndWrapTime: "",
-        involveDroneFilming: undefined,
-        proposedActivityDetails: "",
-        droneOperatorHasLicense: undefined,
-        droneProposedActivityDetails: "",
-        showAfterCreated: true,
-      },
-    },
-    mode: "onChange",
+    shouldUnregister: false,
+    defaultValues: resolvedDefaults,
+    mode: "onTouched",
   });
+
+  // siteAddress has no visible input in the wizard — RHF drops unregistered
+  // fields from getValues(). Force-write it on mount in edit mode so it is
+  // present when the form is submitted.
+  // useEffect(() => {
+  //   if (mode === "edit" && initialData?.siteAddress) {
+  //     form.setValue("siteAddress", initialData.siteAddress, {
+  //       shouldValidate: false,
+  //       shouldDirty: false,
+  //     });
+  //   }
+  //   // eslint-disable-next-line react-hooks/exhaustive-deps
+  // }, []);
 
   const involveDroneFilming = form.watch("formData.involveDroneFilming");
   const includeDroneStep = involveDroneFilming === "yes";
@@ -167,12 +210,27 @@ export default function PermitForm() {
   const logicalStepId = currentStepConfig.id;
 
   const handleNext = async () => {
-    const fields = STEP_FIELDS[logicalStepId] ?? [];
-    const valid = await form.trigger(fields);
-    if (!valid) return;
+    // In edit mode with pre-populated data, skip per-step validation
+    // Full validation runs on final submit via form.trigger()
+    if (mode !== "edit") {
+      const fields = STEP_FIELDS[logicalStepId] ?? [];
+      const valid = await form.trigger(
+        fields.length > 0
+          ? (fields as Parameters<typeof form.trigger>[0])
+          : undefined,
+      );
+      if (!valid) return;
+    }
 
-    // On step 1 first advance: create draft to obtain a permitId
+    // Step 1 advance: in edit mode the permit already exists — skip draft creation
     if (currentStep === 1 && permitId === null) {
+      if (mode === "edit") {
+        form.setError("root", {
+          message: "Permit ID missing. Please refresh and try again.",
+        });
+        return;
+      }
+
       try {
         const result = await createDraftAction();
         setPermitId(result.permitId);
@@ -193,6 +251,14 @@ export default function PermitForm() {
   };
 
   const handleSubmit = async () => {
+    console.log("handleSubmit fired", { mode, permitId, isReturned });
+    // siteAddress has no input in the wizard — derive it from locationAddress
+    const locationAddress = form.getValues("formData.locationAddress");
+    form.setValue("siteAddress", locationAddress, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+
     const valid = await form.trigger();
     if (!valid) return;
     if (!permitId) return;
@@ -201,7 +267,25 @@ export default function PermitForm() {
     setSubmitError(null);
 
     try {
-      // Convert files to base64 for the server action
+      if (mode === "edit") {
+        const { updatePermitAction, resubmitPermitAction } =
+          await import("@/app/(applicant)/applications/[id]/edit/actions");
+        const action = isReturned ? resubmitPermitAction : updatePermitAction;
+        const result = await action(permitId, form.getValues());
+
+        if (result && "error" in result) {
+          setSubmitError(
+            typeof result.error === "string"
+              ? result.error
+              : "Validation failed. Please check your answers.",
+          );
+          return;
+        }
+
+        return;
+      }
+
+      // ── Create flow (unchanged) ──────────────────────────────────────────
       const fileData = await Promise.all(
         files.map(async (f) => {
           const buffer = await f.arrayBuffer();
@@ -253,11 +337,22 @@ export default function PermitForm() {
       case 6:
         return <Step06Drone form={form} />;
       case 7:
-        return (
+        return mode === "edit" ? (
+          <p className="text-base text-muted-foreground">
+            Document upload will be available soon.
+          </p>
+        ) : (
           <Step07Documents form={form} files={files} onFilesChange={setFiles} />
         );
     }
   };
+
+  const submitLabel =
+    mode === "edit"
+      ? isReturned
+        ? "Resubmit Application"
+        : "Save Changes"
+      : "Submit Application";
 
   return (
     <Form {...form}>
@@ -344,6 +439,7 @@ export default function PermitForm() {
           isSubmitting={isSubmitting}
           isFirstStep={isFirstStep}
           isLastStep={isLastStep}
+          submitLabel={submitLabel}
         />
       </div>
     </Form>

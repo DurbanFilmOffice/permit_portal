@@ -91,4 +91,31 @@ export const permitsService = {
     ]);
     return { permit, history, documents };
   },
+  async updatePermit(permitId: string, userId: string, data: PermitFormValues) {
+    const permit = await permitsRepository.findById(permitId);
+    if (!permit) throw new Error("Application not found");
+    if (permit.userId !== userId) throw new Error("Forbidden");
+
+    const editableStatuses = ["draft", "submitted", "returned"];
+    if (!editableStatuses.includes(permit.status)) {
+      throw new Error("This application can no longer be edited");
+    }
+
+    return permitsRepository.update(permitId, {
+      projectName: data.projectName,
+      siteAddress: data.formData.locationAddress,
+      description: data.formData.descriptionOfScenes ?? null,
+      formData: data.formData,
+    });
+  },
+
+  async resubmitPermit(
+    permitId: string,
+    userId: string,
+    data: PermitFormValues,
+  ) {
+    await permitsService.updatePermit(permitId, userId, data);
+    const resubmitted = await permitsRepository.submit(permitId);
+    return resubmitted;
+  },
 };

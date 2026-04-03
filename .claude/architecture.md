@@ -471,11 +471,19 @@ droneProposedActivityDetails richtext    rich text editor
 ```
 
 ### Step 7 — Documents & submit
+
+DOCUMENT UPLOAD IS DEFERRED — requirements are changing.
+Individual document upload per document type will be implemented
+in a future session once requirements are confirmed.
+Do not build any file upload UI or storage logic until instructed.
+
+For now, step 7 shows:
+  - A placeholder message: "Document upload will be available soon."
+  - showAfterCreated checkbox: boolean default true
+    ("Show project after it's been created")
+
 ```
-documents    file[]    multiple file upload
-             ← required document types TBD — accept all for now
-             ← stored in Supabase Storage, URLs saved to permit_documents table
-showAfterCreated   boolean   default true (checkbox: "Show project after it's been created")
+showAfterCreated   boolean   default true
 ```
 
 ### Rich text editor
