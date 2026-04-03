@@ -52,7 +52,7 @@ export default function ForgotPasswordPage() {
           we've sent a password reset link. Check your spam folder if you don't
           see it within a few minutes.
         </p>
-        <Link href="/login" className="text-sm text-muted-foreground underline underline-offset-4">
+        <Link href="/login" className="text-base text-muted-foreground underline underline-offset-4">
           Back to sign in
         </Link>
       </div>
@@ -95,7 +95,7 @@ export default function ForgotPasswordPage() {
         </form>
       </Form>
 
-      <Link href="/login" className="text-sm text-center text-muted-foreground underline underline-offset-4">
+      <Link href="/login" className="text-base text-center text-muted-foreground underline underline-offset-4">
         Back to sign in
       </Link>
     </div>

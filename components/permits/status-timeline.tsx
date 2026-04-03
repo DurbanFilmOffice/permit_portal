@@ -70,7 +70,7 @@ export default function StatusTimeline({ history }: StatusTimelineProps) {
             <div className={`${isLast ? "pb-0" : "pb-6"}`}>
               <div className="flex flex-wrap items-center gap-2">
                 <StatusBadge status={entry.newStatus} />
-                <span className="text-xs text-muted-foreground">
+                <span className="text-sm text-muted-foreground">
                   {formatTimestamp(entry.changedAt)}
                 </span>
               </div>
@@ -83,7 +83,7 @@ export default function StatusTimeline({ history }: StatusTimelineProps) {
 
               {entry.comment && (
                 <div className="mt-2 pl-3 border-l-2 border-muted">
-                  <p className="text-sm text-muted-foreground italic">
+                  <p className="text-base text-muted-foreground italic">
                     — {entry.comment}
                   </p>
                 </div>

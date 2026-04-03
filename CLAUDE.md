@@ -17,6 +17,35 @@ Reference: https://permits.durban.gov.za/projects
 
 These apply to every task, every file, every session. Never break them.
 
+### Typography rules (apply to every component, every session)
+
+These are hardcoded project standards. Never use smaller sizes than these.
+
+| Element | Class | Never use |
+|---|---|---|
+| Body text, paragraphs | `text-base` | `text-sm` for reading text |
+| Form labels | `text-base font-medium` | `text-sm` |
+| Input / select / textarea | `text-base` | `text-sm` |
+| Table cell content | `text-base` | `text-sm` |
+| Table headers | `text-base font-medium` | `text-sm` |
+| Placeholder text | inherits `text-base` from input | never override smaller |
+| Nav item labels | `text-base` | `text-sm` |
+| Page headings (h1) | `text-2xl font-semibold` | anything smaller |
+| Section headings (h2) | `text-xl font-semibold` | anything smaller |
+| Card headings | `text-lg font-semibold` | anything smaller |
+| Helper / hint text | `text-sm text-muted-foreground` | `text-xs` |
+| Badges / tags | `text-sm` | `text-xs` |
+| Monospace (ref numbers) | `text-base font-mono` | `text-sm font-mono` |
+| Button labels | `text-base` | `text-sm` |
+| Dropdown menu items | `text-base` | `text-sm` |
+
+**The rule in plain language:** `text-sm` is only allowed for
+helper/hint text, badges, and timestamps. Everything a user reads,
+fills in, or clicks must be `text-base` or larger.
+
+When adding a new component or page, do not copy shadcn's default
+`text-sm` — always upgrade to `text-base` unless it is a hint/badge.
+
 1. **No DB calls outside repositories.** All Drizzle queries live in `src/repositories/` only.
 2. **No business logic outside services.** Route handlers and components call services. Nothing else.
 3. **No `@supabase/supabase-js` outside `src/lib/db.ts` and `src/lib/storage.ts`.** DB host is swappable — keep it that way.
