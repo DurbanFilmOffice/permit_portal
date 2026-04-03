@@ -4,6 +4,7 @@ import type { Role } from "@/lib/validations/roles";
 import { permitDocumentsRepository } from "@/repositories/permit-documents.repository";
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
 import { permitStatusHistoryRepository } from "@/repositories/permit-status-history.repository";
+import { assignmentsService } from "@/services/assignments.service";
 
 export const permitsService = {
   async getUserPermits(userId: string) {
@@ -117,5 +118,16 @@ export const permitsService = {
     await permitsService.updatePermit(permitId, userId, data);
     const resubmitted = await permitsRepository.submit(permitId);
     return resubmitted;
+  },
+
+  // Admin: all applications with optional filters
+  async getAllPermits(filters?: { status?: string; search?: string }) {
+    return permitsRepository.findAllWithFilters(filters);
+  },
+
+  // Internal user: only permits they are assigned to
+  async getMyAssignedPermits(userId: string) {
+    const ids = await assignmentsService.getAssignedPermitIds(userId);
+    return permitsRepository.findByIds(ids);
   },
 };

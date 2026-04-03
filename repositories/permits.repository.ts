@@ -1,6 +1,6 @@
 import { db } from "@/lib/db";
 import { permits } from "@/db/schema/permits";
-import { eq, desc, and, ilike } from "drizzle-orm";
+import { eq, desc, and, ilike, inArray } from "drizzle-orm";
 import type { NewPermit } from "@/db/schema/permits";
 
 export const permitsRepository = {
@@ -80,4 +80,32 @@ export const permitsRepository = {
       .where(eq(permits.id, id))
       .returning()
       .then((r) => r[0]),
+
+  // All applications (admin: all permits)
+  findAllWithFilters: (filters?: { status?: string; search?: string }) => {
+    const conditions = [];
+    if (filters?.status) {
+      conditions.push(
+        eq(permits.status, filters.status as typeof permits.status._.data),
+      );
+    }
+    if (filters?.search) {
+      conditions.push(ilike(permits.projectName, `%${filters.search}%`));
+    }
+    return db
+      .select()
+      .from(permits)
+      .where(conditions.length ? and(...conditions) : undefined)
+      .orderBy(desc(permits.createdAt));
+  },
+
+  // My Applications (internal: only assigned permits)
+  findByIds: (ids: string[]) => {
+    if (ids.length === 0) return Promise.resolve([]);
+    return db
+      .select()
+      .from(permits)
+      .where(inArray(permits.id, ids))
+      .orderBy(desc(permits.createdAt));
+  },
 };
