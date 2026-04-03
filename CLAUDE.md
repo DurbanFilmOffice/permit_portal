@@ -138,6 +138,8 @@ Key distinctions:
 - Workflow engine (`workflow.service.ts` exists as stubs — see `.claude/architecture.md`)
 - Permit form submission logic (form fields are now defined in `.claude/architecture.md`
   — build the form UI in Phase 4 session 12)
+- Document upload (requirements changing — individual upload per document type coming later.
+  Do not build any file upload UI or storage logic until explicitly instructed.)
 - Auth.js (proxy is passthrough skeleton — add after scaffold is reviewed)
 - Redis / job queue (synchronous email sends are fine for MVP)
 - WebSocket notifications (polling every 30s is sufficient)
