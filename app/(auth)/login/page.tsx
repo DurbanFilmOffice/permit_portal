@@ -99,7 +99,7 @@ export default function LoginPage() {
         <div className="w-full max-w-md space-y-6">
           <div className="space-y-1">
             <h1 className="text-2xl font-semibold tracking-tight">Sign in</h1>
-            <p className="text-sm text-muted-foreground">
+            <p className="text-base text-muted-foreground">
               Enter your details to continue
             </p>
           </div>
@@ -184,7 +184,7 @@ export default function LoginPage() {
             </form>
           </Form>
 
-          <div className="space-y-2 text-center text-sm">
+          <div className="space-y-2 text-center text-base">
             <div>
               <Link
                 href="/forgot-password"

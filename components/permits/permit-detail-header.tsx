@@ -24,7 +24,7 @@ export default function PermitDetailHeader({
     <div className="flex items-start justify-between gap-4">
       {/* Left */}
       <div>
-        <p className="text-sm text-muted-foreground font-mono">
+        <p className="text-base font-mono text-muted-foreground">
           Ref # {ref}
         </p>
         <h1 className="text-2xl font-semibold mt-1">{permit.projectName}</h1>

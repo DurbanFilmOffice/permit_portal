@@ -53,7 +53,7 @@ export function Step07Documents({ form, files, onFilesChange }: Props) {
       {/* ── Application summary ───────────────────────────────────────── */}
       <div className="rounded-md border border-input bg-muted/40 p-4 space-y-3">
         <p className="text-base font-medium">Review your application</p>
-        <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5 text-sm">
+        <div className="grid grid-cols-[120px_1fr] gap-x-4 gap-y-1.5 text-base">
           <span className="text-muted-foreground">Project</span>
           <span className="font-medium">
             {values.formData.projectTitle || "—"}
@@ -99,12 +99,12 @@ export function Step07Documents({ form, files, onFilesChange }: Props) {
             {files.map((file, index) => (
               <li
                 key={`${file.name}-${index}`}
-                className="flex items-center justify-between rounded-md border border-input px-3 py-2 text-sm"
+                className="flex items-center justify-between rounded-md border border-input px-3 py-2 text-base"
               >
                 <div className="flex items-center gap-2 min-w-0">
                   <Paperclip className="h-4 w-4 shrink-0 text-muted-foreground" />
                   <span className="truncate">{file.name}</span>
-                  <span className="shrink-0 text-xs text-muted-foreground">
+                  <span className="shrink-0 text-sm text-muted-foreground">
                     ({formatBytes(file.size)})
                   </span>
                 </div>

@@ -274,7 +274,7 @@ export default function PermitForm() {
                 <li key={step.id} className="flex items-center gap-2">
                   <div
                     className={cn(
-                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-sm transition-colors",
+                      "flex items-center gap-1.5 rounded-full px-3 py-1 text-base transition-colors",
                       isCurrent &&
                         "bg-primary text-primary-foreground font-medium",
                       isCompleted && !isCurrent && "bg-primary/10 text-primary",
