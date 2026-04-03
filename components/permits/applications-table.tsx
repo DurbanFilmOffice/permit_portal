@@ -38,51 +38,6 @@ function formatPermitType(type: string): string {
   return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ");
 }
 
-const columns: ColumnDef<Permit>[] = [
-  {
-    id: "reference",
-    accessorFn: (row) => row.id.slice(0, 8).toUpperCase(),
-    header: () => <span className="text-base font-medium">Ref #</span>,
-    cell: ({ getValue }) => (
-      <span className="font-mono text-base">{getValue<string>()}</span>
-    ),
-  },
-  {
-    accessorKey: "projectName",
-    header: () => <span className="text-base font-medium">Project</span>,
-    cell: ({ getValue }) => (
-      <span className="font-medium">{getValue<string>()}</span>
-    ),
-  },
-  {
-    accessorKey: "permitType",
-    header: () => <span className="text-base font-medium">Type</span>,
-    cell: ({ getValue }) => formatPermitType(getValue<string>()),
-  },
-  {
-    accessorKey: "status",
-    header: () => <span className="text-base font-medium">Status</span>,
-    cell: ({ getValue }) => <StatusBadge status={getValue<string>()} />,
-  },
-  {
-    accessorKey: "submittedAt",
-    header: () => <span className="text-base font-medium">Submitted</span>,
-    cell: ({ getValue }) => formatDate(getValue<Date | string | null>()),
-  },
-  {
-    id: "actions",
-    header: () => <span className="text-base font-medium">View</span>,
-    enableSorting: false,
-    cell: ({ row }) => (
-      <Button variant="ghost" size="sm" asChild>
-        <Link href={`/applications/${row.original.id}`}>
-          <ArrowRight className="h-4 w-4" />
-        </Link>
-      </Button>
-    ),
-  },
-];
-
 function SortIcon({ isSorted }: { isSorted: false | "asc" | "desc" }) {
   if (isSorted === "asc") return <ChevronUp className="ml-1 h-3 w-3 inline" />;
   if (isSorted === "desc")
@@ -107,8 +62,61 @@ function EmptyState() {
   );
 }
 
-export default function ApplicationsTable({ permits }: { permits: Permit[] }) {
+interface ApplicationsTableProps {
+  permits: Permit[];
+  linkPrefix?: string;
+}
+
+export default function ApplicationsTable({
+  permits,
+  linkPrefix = "/applications",
+}: ApplicationsTableProps) {
   const [sorting, setSorting] = useState<SortingState>([]);
+
+  const columns: ColumnDef<Permit>[] = [
+    {
+      id: "reference",
+      accessorFn: (row) => row.id.slice(0, 8).toUpperCase(),
+      header: () => <span className="text-base font-medium">Ref #</span>,
+      cell: ({ getValue }) => (
+        <span className="font-mono text-base">{getValue<string>()}</span>
+      ),
+    },
+    {
+      accessorKey: "projectName",
+      header: () => <span className="text-base font-medium">Project</span>,
+      cell: ({ getValue }) => (
+        <span className="font-medium">{getValue<string>()}</span>
+      ),
+    },
+    {
+      accessorKey: "permitType",
+      header: () => <span className="text-base font-medium">Type</span>,
+      cell: ({ getValue }) => formatPermitType(getValue<string>()),
+    },
+    {
+      accessorKey: "status",
+      header: () => <span className="text-base font-medium">Status</span>,
+      cell: ({ getValue }) => <StatusBadge status={getValue<string>()} />,
+    },
+    {
+      accessorKey: "submittedAt",
+      header: () => <span className="text-base font-medium">Submitted</span>,
+      cell: ({ getValue }) => formatDate(getValue<Date | string | null>()),
+    },
+    {
+      id: "actions",
+      header: () => <span className="text-base font-medium">View</span>,
+      enableSorting: false,
+      cell: ({ row }) => (
+        <Button variant="ghost" size="sm" asChild>
+          <Link href={`${linkPrefix}/${row.original.id}`}>
+            <ArrowRight className="h-4 w-4" />
+          </Link>
+        </Button>
+      ),
+    },
+  ];
 
   const table = useReactTable({
     data: permits,
