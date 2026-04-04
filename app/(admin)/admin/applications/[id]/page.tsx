@@ -11,6 +11,9 @@ import type { Role } from "@/lib/validations/roles";
 import { commentsService } from "@/services/comments.service";
 import { CommentThread } from "@/components/permits/comment-thread";
 import { CommentForm } from "@/components/permits/comment-form";
+import { notesService } from "@/services/notes.service";
+import { NotesThread } from "@/components/permits/notes-thread";
+import { NotesForm } from "@/components/permits/notes-form";
 
 export default async function AdminPermitDetailPage({
   params,
@@ -44,9 +47,12 @@ export default async function AdminPermitDetailPage({
 
   const isExternalUser = session.user.role === "external_user";
 
-  const comments = isExternalUser
-    ? []
-    : await commentsService.getComments(id, session.user.role as Role);
+  const [comments, notes] = await Promise.all([
+    isExternalUser
+      ? Promise.resolve([])
+      : commentsService.getComments(id, session.user.role as Role),
+    notesService.getNotes(id, session.user.role as Role),
+  ]);
 
   return (
     <div className="space-y-8 max-w-5xl">
@@ -60,7 +66,6 @@ export default async function AdminPermitDetailPage({
             <PermitDetailInfo permit={permit} />
           </section>
 
-          {/* Comment thread placeholder — Phase 6 */}
           <section>
             <h2 className="text-xl font-semibold mb-4">Comments</h2>
             {isExternalUser ? (
@@ -89,13 +94,19 @@ export default async function AdminPermitDetailPage({
             )}
           </section>
 
-          {/* Internal notes placeholder — Phase 7 */}
           <section>
             <h2 className="text-xl font-semibold mb-4">Internal Notes</h2>
-            <div className="rounded-lg border border-dashed p-8 text-center">
-              <p className="text-base text-muted-foreground">
-                Internal notes coming soon
-              </p>
+            <div className="space-y-4">
+              <NotesThread
+                permitId={id}
+                initialNotes={notes}
+                currentUserId={session.user.id}
+                currentUserRole={session.user.role as Role}
+              />
+              <NotesForm
+                permitId={id}
+                currentUserRole={session.user.role as Role}
+              />
             </div>
           </section>
         </div>
