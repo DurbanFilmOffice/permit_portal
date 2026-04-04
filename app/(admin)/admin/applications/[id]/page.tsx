@@ -8,6 +8,9 @@ import StatusTimeline from "@/components/permits/status-timeline";
 import AssignmentPanel from "@/components/permits/assignment-panel";
 import { isInternalRole } from "@/lib/validations/roles";
 import type { Role } from "@/lib/validations/roles";
+import { commentsService } from "@/services/comments.service";
+import { CommentThread } from "@/components/permits/comment-thread";
+import { CommentForm } from "@/components/permits/comment-form";
 
 export default async function AdminPermitDetailPage({
   params,
@@ -39,6 +42,12 @@ export default async function AdminPermitDetailPage({
     assignmentsService.getInternalUsers(),
   ]);
 
+  const isExternalUser = session.user.role === "external_user";
+
+  const comments = isExternalUser
+    ? []
+    : await commentsService.getComments(id, session.user.role as Role);
+
   return (
     <div className="space-y-8 max-w-5xl">
       <PermitDetailHeader permit={permit} isOwner={false} canEdit={false} />
@@ -54,11 +63,30 @@ export default async function AdminPermitDetailPage({
           {/* Comment thread placeholder — Phase 6 */}
           <section>
             <h2 className="text-xl font-semibold mb-4">Comments</h2>
-            <div className="rounded-lg border border-dashed p-8 text-center">
-              <p className="text-base text-muted-foreground">
-                Comment thread coming soon
-              </p>
-            </div>
+            {isExternalUser ? (
+              <div className="rounded-lg border border-dashed p-8 text-center">
+                <p className="text-base text-muted-foreground">
+                  External users cannot access the comment thread.
+                </p>
+              </div>
+            ) : (
+              <div className="space-y-4">
+                <CommentThread
+                  permitId={id}
+                  initialComments={comments}
+                  currentUserId={session.user.id}
+                  currentUserRole={session.user.role as Role}
+                  permitStatus={permit.status}
+                  isExternalUser={false}
+                />
+                <CommentForm
+                  permitId={id}
+                  currentUserRole={session.user.role as Role}
+                  permitStatus={permit.status}
+                  isExternalUser={false}
+                />
+              </div>
+            )}
           </section>
 
           {/* Internal notes placeholder — Phase 7 */}
