@@ -1,5 +1,5 @@
 import { permitsRepository } from "@/repositories/permits.repository";
-import { isInternalRole } from "@/lib/validations/roles";
+import { isInternalRole, canApproveReject } from "@/lib/validations/roles";
 import type { Role } from "@/lib/validations/roles";
 import { permitDocumentsRepository } from "@/repositories/permit-documents.repository";
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
@@ -22,8 +22,81 @@ export const permitsService = {
     return permit;
   },
 
-  // approvePermit and rejectPermit are wired in Phase 8 (approval session)
-  // alongside permitStatusHistoryRepository and notificationsService
+  async approvePermit(
+    permitId: string,
+    officerId: string,
+    officerRole: Role,
+    reason?: string,
+  ) {
+    // Permission check — only permit_admin, admin, super_admin
+    if (!canApproveReject(officerRole)) {
+      throw new Error("You do not have permission to approve applications");
+    }
+
+    const permit = await permitsRepository.findById(permitId);
+    if (!permit) throw new Error("Application not found");
+
+    if (["approved", "rejected"].includes(permit.status)) {
+      throw new Error("This application is already closed");
+    }
+
+    const updated = await permitsRepository.update(permitId, {
+      status: "approved",
+    });
+
+    await permitStatusHistoryRepository.create({
+      permitId,
+      changedBy: officerId,
+      oldStatus: permit.status,
+      newStatus: "approved",
+      comment: reason ?? null,
+    });
+
+    // Notification stub — wired in Phase 9
+    // await notificationsService.onStatusChanged(updated, reason)
+
+    return updated;
+  },
+
+  async rejectPermit(
+    permitId: string,
+    officerId: string,
+    officerRole: Role,
+    reason?: string,
+  ) {
+    // Permission check — permit_admin | admin | super_admin
+    // NOTE: In the full workflow, 'rejected' is terminal and
+    // intended for super_admin only (fraud/duplicate cases).
+    // For now all canApproveReject roles can reject.
+    // Revisit when workflow engine is implemented.
+    if (!canApproveReject(officerRole)) {
+      throw new Error("You do not have permission to reject applications");
+    }
+
+    const permit = await permitsRepository.findById(permitId);
+    if (!permit) throw new Error("Application not found");
+
+    if (["approved", "rejected"].includes(permit.status)) {
+      throw new Error("This application is already closed");
+    }
+
+    const updated = await permitsRepository.update(permitId, {
+      status: "rejected",
+    });
+
+    await permitStatusHistoryRepository.create({
+      permitId,
+      changedBy: officerId,
+      oldStatus: permit.status,
+      newStatus: "rejected",
+      comment: reason ?? null,
+    });
+
+    // Notification stub — wired in Phase 9
+    // await notificationsService.onStatusChanged(updated, reason)
+
+    return updated;
+  },
 
   async createDraft(
     userId: string,
@@ -92,6 +165,7 @@ export const permitsService = {
     ]);
     return { permit, history, documents };
   },
+
   async updatePermit(permitId: string, userId: string, data: PermitFormValues) {
     const permit = await permitsRepository.findById(permitId);
     if (!permit) throw new Error("Application not found");

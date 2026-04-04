@@ -56,7 +56,13 @@ export default async function AdminPermitDetailPage({
 
   return (
     <div className="space-y-8 max-w-5xl">
-      <PermitDetailHeader permit={permit} isOwner={false} canEdit={false} />
+      <PermitDetailHeader
+        permit={permit}
+        isOwner={false}
+        canEdit={false}
+        currentUserRole={session.user.role as Role}
+        showApprovalActions={true}
+      />
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main content */}

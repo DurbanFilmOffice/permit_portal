@@ -2,18 +2,24 @@ import Link from 'next/link'
 import { Pencil } from 'lucide-react'
 import { Button } from '@/components/ui/button'
 import { StatusBadge } from '@/components/permits/status-badge'
+import { ApprovalActions } from '@/components/permits/approval-actions'
 import type { Permit } from '@/db/schema/permits'
+import type { Role } from '@/lib/validations/roles'
 
 interface PermitDetailHeaderProps {
   permit: Permit
   isOwner: boolean
   canEdit: boolean
+  currentUserRole?: Role
+  showApprovalActions?: boolean
 }
 
 export default function PermitDetailHeader({
   permit,
   isOwner: _isOwner,
   canEdit,
+  currentUserRole,
+  showApprovalActions = false,
 }: PermitDetailHeaderProps) {
   const ref = permit.id.slice(0, 8).toUpperCase()
   const formData = (permit.formData ?? {}) as Record<string, unknown>
@@ -43,6 +49,13 @@ export default function PermitDetailHeader({
               Edit application
             </Link>
           </Button>
+        )}
+        {showApprovalActions && currentUserRole && (
+          <ApprovalActions
+            permitId={permit.id}
+            currentStatus={permit.status}
+            currentUserRole={currentUserRole}
+          />
         )}
       </div>
     </div>
