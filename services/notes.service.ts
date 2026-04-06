@@ -1,11 +1,13 @@
 import { notesRepository } from "@/repositories/notes.repository";
+import { permitsRepository } from "@/repositories/permits.repository";
 import { assignmentsRepository } from "@/repositories/assignments.repository";
+import { usersRepository } from "@/repositories/users.repository";
+import { notificationsService } from "@/services/notifications.service";
 import { isInternalRole } from "@/lib/validations/roles";
 import type { Role } from "@/lib/validations/roles";
 
 export const notesService = {
   async getNotes(permitId: string, requestingRole: Role) {
-    // Hard block — applicants can never see internal notes
     if (!isInternalRole(requestingRole)) {
       throw new Error("You do not have access to internal notes");
     }
@@ -18,10 +20,12 @@ export const notesService = {
     authorRole: Role,
     body: string,
   ) {
-    // Hard block — applicants can never write internal notes
     if (!isInternalRole(authorRole)) {
       throw new Error("You do not have access to internal notes");
     }
+
+    const permit = await permitsRepository.findById(permitId);
+    if (!permit) throw new Error("Application not found");
 
     const note = await notesRepository.create({
       permitId,
@@ -29,11 +33,17 @@ export const notesService = {
       body: body.trim(),
     });
 
-    // Notify all assigned users except the author
-    // Stub — wired in Phase 9 (notification bell session)
-    // const assigned = await assignmentsRepository.findByPermit(permitId)
-    // const recipients = assigned.filter(a => a.user.id !== authorId)
-    // await notificationsService.onNoteAdded(permit, note, recipients)
+    const assigned = await assignmentsRepository.findByPermit(permitId);
+    const recipients = assigned.filter((a) => a.user.id !== authorId);
+    if (recipients.length > 0) {
+      const author = await usersRepository.findById(authorId);
+      await notificationsService.onNoteAdded(
+        permit,
+        note,
+        author?.fullName ?? "A team member",
+        recipients,
+      );
+    }
 
     return note;
   },
@@ -44,7 +54,6 @@ export const notesService = {
     editorRole: Role,
     body: string,
   ) {
-    // Hard block — applicants cannot reach this
     if (!isInternalRole(editorRole)) {
       throw new Error("You do not have access to internal notes");
     }
@@ -60,7 +69,6 @@ export const notesService = {
   },
 
   async deleteNote(noteId: string, deleterId: string, deleterRole: Role) {
-    // Hard block — applicants cannot reach this
     if (!isInternalRole(deleterRole)) {
       throw new Error("You do not have access to internal notes");
     }
