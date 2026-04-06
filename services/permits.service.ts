@@ -5,6 +5,7 @@ import { permitDocumentsRepository } from "@/repositories/permit-documents.repos
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
 import { permitStatusHistoryRepository } from "@/repositories/permit-status-history.repository";
 import { assignmentsService } from "@/services/assignments.service";
+import { notificationsService } from "@/services/notifications.service";
 
 export const permitsService = {
   async getUserPermits(userId: string) {
@@ -15,7 +16,6 @@ export const permitsService = {
     const permit = await permitsRepository.findById(id);
     if (!permit) throw new Error("Application not found");
 
-    // Applicants can only see their own permits
     if (!isInternalRole(userRole) && permit.userId !== userId) {
       throw new Error("You do not have access to this application");
     }
@@ -28,7 +28,6 @@ export const permitsService = {
     officerRole: Role,
     reason?: string,
   ) {
-    // Permission check — only permit_admin, admin, super_admin
     if (!canApproveReject(officerRole)) {
       throw new Error("You do not have permission to approve applications");
     }
@@ -52,8 +51,7 @@ export const permitsService = {
       comment: reason ?? null,
     });
 
-    // Notification stub — wired in Phase 9
-    // await notificationsService.onStatusChanged(updated, reason)
+    await notificationsService.onStatusChanged(updated, reason);
 
     return updated;
   },
@@ -64,11 +62,6 @@ export const permitsService = {
     officerRole: Role,
     reason?: string,
   ) {
-    // Permission check — permit_admin | admin | super_admin
-    // NOTE: In the full workflow, 'rejected' is terminal and
-    // intended for super_admin only (fraud/duplicate cases).
-    // For now all canApproveReject roles can reject.
-    // Revisit when workflow engine is implemented.
     if (!canApproveReject(officerRole)) {
       throw new Error("You do not have permission to reject applications");
     }
@@ -92,8 +85,7 @@ export const permitsService = {
       comment: reason ?? null,
     });
 
-    // Notification stub — wired in Phase 9
-    // await notificationsService.onStatusChanged(updated, reason)
+    await notificationsService.onStatusChanged(updated, reason);
 
     return updated;
   },
@@ -121,7 +113,6 @@ export const permitsService = {
     data: PermitFormValues,
     files: { name: string; url: string; type: string; size: number }[],
   ) {
-    // 1. Verify ownership
     const permit = await permitsRepository.findById(permitId);
     if (!permit) throw new Error("Application not found");
     if (permit.userId !== userId) throw new Error("Forbidden");
@@ -129,7 +120,6 @@ export const permitsService = {
       throw new Error("This application cannot be submitted");
     }
 
-    // 2. Update permit data + set status to submitted
     await permitsRepository.update(permitId, {
       projectName: data.projectName,
       siteAddress: data.formData.locationAddress,
@@ -138,7 +128,6 @@ export const permitsService = {
     });
     const submitted = await permitsRepository.submit(permitId);
 
-    // 3. Save document records
     await Promise.all(
       files.map((f) =>
         permitDocumentsRepository.create({
@@ -151,8 +140,7 @@ export const permitsService = {
       ),
     );
 
-    // 4. Trigger notifications (stub — wired in notifications session)
-    // await notificationsService.onPermitSubmitted(submitted)
+    await notificationsService.onPermitSubmitted(submitted);
 
     return submitted;
   },
@@ -194,12 +182,10 @@ export const permitsService = {
     return resubmitted;
   },
 
-  // Admin: all applications with optional filters
   async getAllPermits(filters?: { status?: string; search?: string }) {
     return permitsRepository.findAllWithFilters(filters);
   },
 
-  // Internal user: only permits they are assigned to
   async getMyAssignedPermits(userId: string) {
     const ids = await assignmentsService.getAssignedPermitIds(userId);
     return permitsRepository.findByIds(ids);

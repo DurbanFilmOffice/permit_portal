@@ -14,7 +14,8 @@ export async function sendEmail({ to, subject, template }: SendEmailOptions) {
 
   try {
     const { data, error } = await resend.emails.send({
-      from: process.env.EMAIL_FROM ?? 'Permit Portal <onboarding@resend.dev>',
+      // from: process.env.EMAIL_FROM ?? 'Permit Portal <onboarding@resend.dev>',
+      from: "Permit Portal <noreply@lucysup.com>",
       to,
       subject,
       html,
