@@ -1,4 +1,4 @@
-import 'server-only'
+import "server-only";
 
 import {
   Body,
@@ -49,7 +49,7 @@ export function PermitCommentEmail({
           <Text style={paragraph}>
             Hi {recipientName}, <strong>{commenterName}</strong> ({roleLabel})
             has left a comment on your permit application for{" "}
-            <strong>{projectName}</strong>.
+            <strong>{referenceNumber}</strong>.
           </Text>
 
           <Section style={commentBox}>
