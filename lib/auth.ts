@@ -39,6 +39,13 @@ const config = {
         const user = await usersRepository.findByEmail(parsed.data.email);
         if (!user || !user.passwordHash) return null;
 
+        // Check account is active
+        if (user.isActive === false) {
+          throw new Error(
+            "Your account has been deactivated. Please contact an administrator.",
+          );
+        }
+
         if (!user.emailVerified) {
           throw new Error("Please verify your email before signing in");
         }
