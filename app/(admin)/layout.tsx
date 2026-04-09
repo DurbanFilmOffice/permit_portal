@@ -4,14 +4,6 @@ import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { isInternalRole } from "@/lib/validations/roles";
 
-// TODO: Replace with auth() from @/lib/auth once Auth.js is configured
-// const mockUser: SessionUser = {
-//   id: "mock-admin-id",
-//   name: "Sarah Admin",
-//   email: "sarah@permits.gov.za",
-//   role: "super_admin",
-// };
-
 const adminNavItems: NavItem[] = [
   {
     label: "Dashboard",
@@ -26,9 +18,15 @@ const adminNavItems: NavItem[] = [
     roles: ["permit_officer", "admin", "super_admin"],
   },
   {
-    label: "Users",
+    label: "Applicants",
     href: "/admin/users",
     icon: "Users",
+    roles: ["admin", "permit_admin", "super_admin"],
+  },
+  {
+    label: "Administrative users",
+    href: "/admin/users/internal",
+    icon: "UserCog",
     roles: ["admin", "super_admin"],
   },
   {
@@ -60,6 +58,7 @@ export default async function AdminLayout({
     email: session.user.email ?? "",
     role: session.user.role,
   };
+
   return (
     <DashboardShell navItems={adminNavItems} user={user} title="Dashboard">
       {children}

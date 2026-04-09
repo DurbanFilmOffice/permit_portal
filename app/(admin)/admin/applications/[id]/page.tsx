@@ -67,7 +67,7 @@ export default async function AdminPermitDetailPage({
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Main content */}
         <div className="lg:col-span-2 space-y-8">
-          <section>
+          <section className="border-2 bg-card p-10">
             <h2 className="text-xl font-semibold mb-4">Application Details</h2>
             <PermitDetailInfo permit={permit} />
           </section>

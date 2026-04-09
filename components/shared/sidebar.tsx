@@ -13,6 +13,7 @@ import {
   Settings,
   Users,
   UserCircle,
+  UserCog,
   X,
   type LucideIcon,
 } from "lucide-react";
@@ -40,6 +41,7 @@ const ICON_MAP: Record<string, LucideIcon> = {
   LayoutDashboard,
   Settings,
   Users,
+  UserCog,
   UserCircle,
 };
 
@@ -136,7 +138,10 @@ function SidebarContent({
             .filter((item) => item.roles.includes(user.role))
             .map((item) => {
               const isActive =
-                pathname === item.href || pathname.startsWith(item.href + "/");
+                item.href === "/admin/users"
+                  ? pathname === item.href
+                  : pathname === item.href ||
+                    pathname.startsWith(item.href + "/");
               const Icon = ICON_MAP[item.icon];
 
               if (!Icon) return null;
