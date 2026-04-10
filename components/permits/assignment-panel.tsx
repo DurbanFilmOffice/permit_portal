@@ -134,7 +134,7 @@ export default function AssignmentPanel({
   }
 
   return (
-    <Card className="border-2 bg-card p-6">
+    <Card className="p-6">
       <CardHeader>
         <CardTitle className="text-lg font-semibold">Assigned Team</CardTitle>
       </CardHeader>

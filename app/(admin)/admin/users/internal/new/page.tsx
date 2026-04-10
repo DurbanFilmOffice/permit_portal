@@ -21,7 +21,7 @@ export default async function NewInternalUserPage() {
         <Button variant="ghost" size="sm" asChild className="mb-4 -ml-2">
           <Link href="/admin/users/internal">
             <ArrowLeft className="h-4 w-4 mr-2" />
-            <span className="text-base">Back to internal users</span>
+            <span className="text-base">Back to Administrative users </span>
           </Link>
         </Button>
 

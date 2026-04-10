@@ -26,7 +26,7 @@ export default async function UserEditPage({ params }: Props) {
   if (!user) notFound();
 
   return (
-    <div className="space-y-8 max-w-2xl border-2 bg-card p-6">
+    <div className="space-y-8 max-w-2xl border rounded-md bg-card p-6">
       {/* Back link */}
       <div>
         {/* <Button variant="ghost" size="sm" asChild className="mb-4 -ml-2">

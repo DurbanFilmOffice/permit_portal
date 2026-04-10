@@ -55,7 +55,7 @@ export default async function AdminPermitDetailPage({
   ]);
 
   return (
-    <div className="space-y-8 max-w-5xl">
+    <div className="space-y-8">
       <PermitDetailHeader
         permit={permit}
         isOwner={false}
@@ -65,14 +65,33 @@ export default async function AdminPermitDetailPage({
       />
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Main content */}
-        <div className="lg:col-span-2 space-y-8">
-          <section className="border-2 bg-card p-10">
+        {/* Col 1 — Application Details */}
+        <div>
+          <section className="border rounded-md bg-card p-10">
             <h2 className="text-xl font-semibold mb-4">Application Details</h2>
             <PermitDetailInfo permit={permit} />
           </section>
+        </div>
 
-          <section>
+        {/* Col 2 — Sidebar */}
+        <div className="space-y-8">
+          <section className="border rounded-md bg-card p-3">
+            <h2 className="text-xl font-semibold mb-4">Status History</h2>
+            <StatusTimeline history={history} />
+          </section>
+
+          <AssignmentPanel
+            permitId={id}
+            assignments={assignments}
+            internalUsers={internalUsers}
+            currentUserId={session.user.id}
+            currentUserRole={session.user.role as Role}
+          />
+        </div>
+
+        {/* Col 3 — Comments + Notes */}
+        <div className="space-y-8">
+          <section className="border rounded-md bg-card p-3">
             <h2 className="text-xl font-semibold mb-4">Comments</h2>
             {isExternalUser ? (
               <div className="rounded-lg border border-dashed p-8 text-center">
@@ -100,7 +119,7 @@ export default async function AdminPermitDetailPage({
             )}
           </section>
 
-          <section>
+          <section className="border rounded-md bg-card p-3">
             <h2 className="text-xl font-semibold mb-4">Internal Notes</h2>
             <div className="space-y-4">
               <NotesThread
@@ -115,22 +134,6 @@ export default async function AdminPermitDetailPage({
               />
             </div>
           </section>
-        </div>
-
-        {/* Sidebar */}
-        <div className="space-y-8">
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Status History</h2>
-            <StatusTimeline history={history} />
-          </section>
-
-          <AssignmentPanel
-            permitId={id}
-            assignments={assignments}
-            internalUsers={internalUsers}
-            currentUserId={session.user.id}
-            currentUserRole={session.user.role as Role}
-          />
         </div>
       </div>
     </div>
