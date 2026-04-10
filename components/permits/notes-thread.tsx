@@ -2,7 +2,7 @@
 
 import { useState, useTransition } from "react";
 import { useRouter } from "next/navigation";
-import { Lock, Pencil, Trash2 } from "lucide-react";
+import { ChevronDown, ChevronUp, Lock, Pencil, Trash2 } from "lucide-react";
 import { Avatar, AvatarFallback } from "@/components/ui/avatar";
 import { Badge } from "@/components/ui/badge";
 import { Button } from "@/components/ui/button";
@@ -65,6 +65,8 @@ function isEdited(note: Note): boolean {
   );
 }
 
+const INITIAL_VISIBLE = 5;
+
 export function NotesThread({
   permitId,
   initialNotes,
@@ -77,6 +79,12 @@ export function NotesThread({
   const [editBody, setEditBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
+  const [isExpanded, setIsExpanded] = useState(false);
+
+  const totalCount = notes.length;
+  const hasMore = totalCount > INITIAL_VISIBLE;
+  const hiddenCount = totalCount - INITIAL_VISIBLE;
+  const visibleNotes = isExpanded ? notes : notes.slice(-INITIAL_VISIBLE);
 
   const canDeleteAny = ["admin", "super_admin"].includes(currentUserRole);
 
@@ -150,110 +158,143 @@ export function NotesThread({
           No internal notes yet.
         </p>
       ) : (
-        <ul className="space-y-3">
-          {notes.map((note) => {
-            const isAuthor = note.author.id === currentUserId;
-            const canEdit = isAuthor;
-            const canDelete = isAuthor || canDeleteAny;
-            const roleLabel =
-              ROLE_CONFIG[note.author.role as Role]?.label ?? note.author.role;
+        <>
+          {/* Collapsed indicator */}
+          {hasMore && !isExpanded && (
+            <button
+              onClick={() => setIsExpanded(true)}
+              className="w-full py-2 text-base text-muted-foreground
+                hover:text-amber-600 flex items-center justify-center
+                gap-2 border border-dashed border-amber-200
+                dark:border-amber-800 rounded-lg
+                hover:border-amber-400 transition-colors"
+            >
+              <ChevronUp className="h-4 w-4" />
+              View {hiddenCount} more note{hiddenCount !== 1 ? "s" : ""}
+            </button>
+          )}
 
-            return (
-              <li
-                key={note.id}
-                className="border-l-4 border-amber-400 bg-amber-500/5 rounded-r-md p-4 space-y-2"
-              >
-                {/* Top row */}
-                <div className="flex items-center gap-3 flex-wrap">
-                  <Avatar className="h-9 w-9 shrink-0">
-                    <AvatarFallback className="text-sm">
-                      {getInitials(note.author.fullName)}
-                    </AvatarFallback>
-                  </Avatar>
+          <ul className="space-y-3">
+            {visibleNotes.map((note) => {
+              const isAuthor = note.author.id === currentUserId;
+              const canEdit = isAuthor;
+              const canDelete = isAuthor || canDeleteAny;
+              const roleLabel =
+                ROLE_CONFIG[note.author.role as Role]?.label ??
+                note.author.role;
 
-                  <span className="text-base font-medium leading-none">
-                    {note.author.fullName}
-                  </span>
+              return (
+                <li
+                  key={note.id}
+                  className="border-l-4 border-amber-400 bg-amber-500/5 rounded-r-md p-4 space-y-2"
+                >
+                  {/* Top row */}
+                  <div className="flex items-center gap-3 flex-wrap">
+                    <Avatar className="h-9 w-9 shrink-0">
+                      <AvatarFallback className="text-sm">
+                        {getInitials(note.author.fullName)}
+                      </AvatarFallback>
+                    </Avatar>
 
-                  <Badge variant="secondary" className="text-sm">
-                    {roleLabel}
-                  </Badge>
-
-                  <span className="text-sm text-muted-foreground ml-auto">
-                    {formatTimestamp(note.createdAt)}
-                  </span>
-
-                  {isEdited(note) && (
-                    <span className="text-sm italic text-muted-foreground">
-                      (edited)
+                    <span className="text-base font-medium leading-none">
+                      {note.author.fullName}
                     </span>
-                  )}
-                </div>
 
-                {/* Body */}
-                {editingId === note.id ? (
-                  <div className="space-y-2 pt-1">
-                    <Textarea
-                      value={editBody}
-                      onChange={(e) => setEditBody(e.target.value)}
-                      className="text-base resize-y min-h-[80px]"
-                      maxLength={2000}
-                      disabled={isPending}
-                    />
-                    <div className="flex gap-2">
-                      <Button
-                        size="sm"
-                        onClick={() => handleEdit(note.id)}
+                    <Badge variant="secondary" className="text-sm">
+                      {roleLabel}
+                    </Badge>
+
+                    <span className="text-sm text-muted-foreground ml-auto">
+                      {formatTimestamp(note.createdAt)}
+                    </span>
+
+                    {isEdited(note) && (
+                      <span className="text-sm italic text-muted-foreground">
+                        (edited)
+                      </span>
+                    )}
+                  </div>
+
+                  {/* Body */}
+                  {editingId === note.id ? (
+                    <div className="space-y-2 pt-1">
+                      <Textarea
+                        value={editBody}
+                        onChange={(e) => setEditBody(e.target.value)}
+                        className="text-base resize-y min-h-[80px]"
+                        maxLength={2000}
                         disabled={isPending}
-                      >
-                        Save
-                      </Button>
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={cancelEdit}
-                        disabled={isPending}
-                      >
-                        Cancel
-                      </Button>
+                      />
+                      <div className="flex gap-2">
+                        <Button
+                          size="sm"
+                          onClick={() => handleEdit(note.id)}
+                          disabled={isPending}
+                        >
+                          Save
+                        </Button>
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={cancelEdit}
+                          disabled={isPending}
+                        >
+                          Cancel
+                        </Button>
+                      </div>
                     </div>
-                  </div>
-                ) : (
-                  <p className="text-base whitespace-pre-wrap">{note.body}</p>
-                )}
+                  ) : (
+                    <p className="text-base whitespace-pre-wrap">{note.body}</p>
+                  )}
 
-                {/* Actions */}
-                {(canEdit || canDelete) && editingId !== note.id && (
-                  <div className="flex gap-1 pt-1">
-                    {canEdit && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => startEdit(note)}
-                        disabled={isPending}
-                        aria-label="Edit note"
-                      >
-                        <Pencil className="h-4 w-4" />
-                      </Button>
-                    )}
-                    {canDelete && (
-                      <Button
-                        size="sm"
-                        variant="ghost"
-                        onClick={() => handleDelete(note.id)}
-                        disabled={isPending}
-                        aria-label="Delete note"
-                        className="text-destructive hover:text-destructive"
-                      >
-                        <Trash2 className="h-4 w-4" />
-                      </Button>
-                    )}
-                  </div>
-                )}
-              </li>
-            );
-          })}
-        </ul>
+                  {/* Actions */}
+                  {(canEdit || canDelete) && editingId !== note.id && (
+                    <div className="flex gap-1 pt-1">
+                      {canEdit && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => startEdit(note)}
+                          disabled={isPending}
+                          aria-label="Edit note"
+                        >
+                          <Pencil className="h-4 w-4" />
+                        </Button>
+                      )}
+                      {canDelete && (
+                        <Button
+                          size="sm"
+                          variant="ghost"
+                          onClick={() => handleDelete(note.id)}
+                          disabled={isPending}
+                          aria-label="Delete note"
+                          className="text-destructive hover:text-destructive"
+                        >
+                          <Trash2 className="h-4 w-4" />
+                        </Button>
+                      )}
+                    </div>
+                  )}
+                </li>
+              );
+            })}
+          </ul>
+
+          {/* View less */}
+          {hasMore && isExpanded && (
+            <button
+              onClick={() => setIsExpanded(false)}
+              className="w-full py-2 text-base text-muted-foreground
+                hover:text-amber-600 flex items-center justify-center
+                gap-2 border border-dashed border-amber-200
+                dark:border-amber-800 rounded-lg
+                hover:border-amber-400 transition-colors"
+            >
+              <ChevronDown className="h-4 w-4" />
+              View less
+            </button>
+          )}
+        </>
       )}
     </div>
   );

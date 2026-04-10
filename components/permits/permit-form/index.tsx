@@ -415,7 +415,7 @@ export default function PermitForm({
         </nav>
 
         {/* Step content */}
-        <div className="rounded-lg border-2 bg-card p-6 shadow-sm">
+        <div className="rounded-md border bg-card p-6 shadow-sm">
           <h2 className="mb-6 text-xl font-semibold">
             {currentStepConfig.title}
           </h2>

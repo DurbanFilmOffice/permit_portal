@@ -14,7 +14,7 @@ export default function AdminDashboardPage() {
           { label: "Approved", value: "—" },
           { label: "Returned", value: "—" },
         ].map((stat) => (
-          <div key={stat.label} className="rounded-lg border-2 bg-card p-6">
+          <div key={stat.label} className="rounded-lg border bg-card p-6">
             <p className="text-sm font-medium text-muted-foreground">
               {stat.label}
             </p>

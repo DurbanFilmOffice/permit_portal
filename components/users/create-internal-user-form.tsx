@@ -82,7 +82,7 @@ export default function CreateInternalUserForm({ requestingRole }: Props) {
   }
 
   return (
-    <div className="space-y-10">
+    <div className="space-y-10 border rounded-md bg-card p-3">
       {/* ── Personal details ── */}
       <section className="space-y-4">
         <div>
