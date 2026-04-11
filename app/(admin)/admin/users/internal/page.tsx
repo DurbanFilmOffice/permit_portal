@@ -13,7 +13,7 @@ export default async function InternalUsersPage() {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
-  if (!["admin", "super_admin"].includes(session.user.role)) {
+  if (!["permit_admin", "admin", "super_admin"].includes(session.user.role)) {
     redirect("/admin/dashboard");
   }
 

@@ -11,6 +11,7 @@ import {
   Send,
   CheckCircle,
   XCircle,
+  UserCheck,
 } from "lucide-react";
 import {
   Popover,
@@ -30,7 +31,8 @@ type NotificationType =
   | "status_changed"
   | "permit_submitted"
   | "permit_approved"
-  | "permit_rejected";
+  | "permit_rejected"
+  | "user_assigned";
 
 interface PortalNotification {
   id: string;
@@ -63,6 +65,8 @@ function getTypeIcon(type: NotificationType) {
       return <CheckCircle size={size} className="text-green-600" />;
     case "permit_rejected":
       return <XCircle size={size} className="text-red-600" />;
+    case "user_assigned":
+      return <UserCheck size={size} className="text-muted-foreground" />;
   }
 }
 

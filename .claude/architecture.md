@@ -155,12 +155,24 @@ Applicants NEVER see this. Enforced at service layer AND repository layer (separ
 On insert → notify all users in permit_assignments for this permit except the note author.
 Flat list, ordered by created_at ASC.
 
+### `emails` (confirmed templates)
+```
+verify-email.tsx              ← account email verification
+reset-password.tsx            ← password reset link
+permit-submitted.tsx          ← submission confirmation to applicant + officers
+permit-status-update.tsx      ← status change (approved/rejected/returned) to applicant
+permit-comment.tsx            ← new comment notification
+internal-note-notification.tsx← new internal note to assigned users
+assignment-notification.tsx   ← user assigned to a permit application
+```
+
 ### `portal_notifications`
 ```
 id, user_id FK→users (recipient)
-type: enum(comment_added, note_added, status_changed, permit_submitted, permit_approved, permit_rejected)
-  ← comment_added: new applicant-facing comment (notifies other party)
-  ← note_added: new internal note (notifies all assigned users on permit)
+type: enum(comment_added, note_added, status_changed, permit_submitted, permit_approved, permit_rejected, user_assigned)
+  ← comment_added:  new applicant-facing comment (notifies other party)
+  ← note_added:     new internal note (notifies all assigned users on permit)
+  ← user_assigned:  user has been assigned to a permit (notifies the assigned user)
 title: text, body: text (optional)
 permit_id FK→permits (nullable, ON DELETE SET NULL)
 is_read: bool default false, created_at
@@ -326,6 +338,22 @@ decision: enum(approved, returned)
 comment (optional reason), decided_at
 metadata: jsonb (future: IP, device, duration)
 ```
+
+### Fire-and-forget notification pattern
+Notifications must never block core actions. Use this pattern
+in any service that triggers a notification:
+
+  // Fire and forget — do not block core action on notification failure
+  notificationsService.onSomethingHappened(...).catch(err => {
+    console.error('Notification failed:', err)
+  })
+
+Apply this pattern to: onUserAssigned, and any future
+notification calls added to services.
+
+Exception: onPermitSubmitted, onStatusChanged, onCommentAdded
+currently use await — these can be migrated to fire-and-forget
+if notification latency becomes an issue.
 
 ### Workflow confirmed decisions
 - Any user with the assigned role can claim a step (no forced assignment)
