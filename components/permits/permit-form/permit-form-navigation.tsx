@@ -43,9 +43,9 @@ export function PermitFormNavigation({
 
       <div className="flex items-center gap-2">
         {/* Save as draft — always visible; navigates away (draft already saved) */}
-        <Button type="button" variant="outline" asChild disabled={isSubmitting}>
+        {/* <Button type="button" variant="outline" asChild disabled={isSubmitting}>
           <Link href="/applications">Save as draft</Link>
-        </Button>
+        </Button> */}
 
         {/* Next — hidden on last step */}
         {!isLastStep && (
