@@ -12,7 +12,7 @@ import {
 import { Input } from "@/components/ui/input";
 import { Switch } from "@/components/ui/switch";
 import { Label } from "@/components/ui/label";
-import { RichTextEditor } from "@/components/permits/rich-text-editor";
+import RichTextEditor from "@/components/permits/rich-text-editor";
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
 
 interface Props {

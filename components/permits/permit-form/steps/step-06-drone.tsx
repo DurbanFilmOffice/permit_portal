@@ -15,7 +15,7 @@ import {
   SelectTrigger,
   SelectValue,
 } from "@/components/ui/select";
-import { RichTextEditor } from "@/components/permits/rich-text-editor";
+import RichTextEditor from "@/components/permits/rich-text-editor";
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
 
 interface Props {
