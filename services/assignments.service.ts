@@ -1,5 +1,7 @@
 import { assignmentsRepository } from "@/repositories/assignments.repository";
 import { usersRepository } from "@/repositories/users.repository";
+import { permitsRepository } from "@/repositories/permits.repository";
+import { notificationsService } from "@/services/notifications.service";
 import { isInternalRole } from "@/lib/validations/roles";
 import type { Role } from "@/lib/validations/roles";
 
@@ -37,12 +39,47 @@ export const assignmentsService = {
       throw new Error("User is already assigned to this permit");
     }
 
-    return assignmentsRepository.create({
+    // Create assignment
+    const assignment = await assignmentsRepository.create({
       permitId,
       userId,
       assignedBy,
       note: note ?? null,
     });
+
+    // Send notification — fire-and-forget so a notification failure
+    // never blocks the assignment action
+    const [permit, assignedUser, assigningUser] = await Promise.all([
+      permitsRepository.findById(permitId),
+      usersRepository.findById(userId),
+      usersRepository.findById(assignedBy),
+    ]);
+
+    if (permit && assignedUser && assigningUser) {
+      notificationsService
+        .onUserAssigned(
+          {
+            id: permit.id,
+            projectName: permit.projectName,
+            permitType: permit.permitType,
+          },
+          {
+            id: assignedUser.id,
+            email: assignedUser.email,
+            fullName: assignedUser.fullName,
+          },
+          {
+            id: assigningUser.id,
+            fullName: assigningUser.fullName,
+          },
+          note,
+        )
+        .catch((err) => {
+          console.error("Assignment notification failed:", err);
+        });
+    }
+
+    return assignment;
   },
 
   async unassignUser(permitId: string, userId: string, requestingRole: Role) {

@@ -8,6 +8,7 @@ import { PermitSubmittedEmail } from "@/emails/permit-submitted";
 import { PermitStatusUpdateEmail } from "@/emails/permit-status-update";
 import { PermitCommentEmail } from "@/emails/permit-comment";
 import { InternalNoteNotificationEmail } from "@/emails/internal-note-notification";
+import AssignmentNotificationEmail from "@/emails/assignment-notification";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "";
 
@@ -79,7 +80,10 @@ export const notificationsService = {
     const ref = permit.id.slice(0, 8).toUpperCase();
     const portalUrl = `${APP_URL}/applications/${permit.id}`;
 
-    const typeMap: Record<string, "permit_approved" | "permit_rejected" | "status_changed"> = {
+    const typeMap: Record<
+      string,
+      "permit_approved" | "permit_rejected" | "status_changed"
+    > = {
       approved: "permit_approved",
       rejected: "permit_rejected",
       returned: "status_changed",
@@ -214,5 +218,52 @@ export const notificationsService = {
         });
       }),
     );
+  },
+
+  // Called when an internal user is assigned to a permit
+  // Fire-and-forget — notification failure never blocks assignment
+  async onUserAssigned(
+    permit: {
+      id: string;
+      projectName: string;
+      permitType: string;
+    },
+    assignedUser: {
+      id: string;
+      email: string;
+      fullName: string;
+    },
+    assignedBy: {
+      id: string;
+      fullName: string;
+    },
+    note?: string,
+  ): Promise<void> {
+    const ref = permit.id.slice(0, 8).toUpperCase();
+    const portalUrl = `${APP_URL}/admin/applications/${permit.id}`;
+
+    // 1. Portal notification
+    await portalNotificationsRepository.create({
+      userId: assignedUser.id,
+      type: "user_assigned",
+      title: "You have been assigned to a permit application",
+      body: `${permit.projectName} — Ref #${ref}`,
+      permitId: permit.id,
+    });
+
+    // 2. Email notification
+    await sendEmail({
+      to: assignedUser.email,
+      subject: `You have been assigned to a permit application — Ref #${ref}`,
+      template: AssignmentNotificationEmail({
+        recipientName: assignedUser.fullName,
+        assignedByName: assignedBy.fullName,
+        projectName: permit.projectName,
+        referenceNumber: ref,
+        permitType: permit.permitType,
+        portalUrl,
+        note,
+      }),
+    });
   },
 };

@@ -9,13 +9,13 @@ const adminNavItems: NavItem[] = [
     label: "Dashboard",
     href: "/admin/dashboard",
     icon: "LayoutDashboard",
-    roles: ["permit_officer", "admin", "super_admin"],
+    roles: ["permit_officer", "admin", "permit_admin", "super_admin"],
   },
   {
     label: "Applications",
     href: "/admin/applications",
     icon: "FileStack",
-    roles: ["permit_officer", "admin", "super_admin"],
+    roles: ["permit_officer", "admin", "permit_admin", "super_admin"],
   },
   {
     label: "Applicants",
@@ -27,7 +27,7 @@ const adminNavItems: NavItem[] = [
     label: "Administrative users",
     href: "/admin/users/internal",
     icon: "UserCog",
-    roles: ["admin", "super_admin"],
+    roles: ["admin", "permit_admin", "super_admin"],
   },
   {
     label: "Notifications",

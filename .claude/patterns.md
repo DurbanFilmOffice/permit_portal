@@ -264,6 +264,15 @@ export const assignmentsService = {
 // src/services/notifications.service.ts
 export const notificationsService = {
 
+  // Triggered when a user is assigned to a permit
+  // Fire-and-forget — notification failure never blocks assignment
+  // assignmentsService calls this after assignmentsRepository.create()
+  async onUserAssigned(permit, assignedUser, assignedBy, note?) {
+    // Creates portal notification (type: user_assigned)
+    // Sends AssignmentNotificationEmail to assignedUser.email
+    // portalUrl = /admin/applications/[permitId]
+  },
+
   // Triggered when an internal note is added
   // Notifies all assigned users on the permit except the note author
   async onNoteAdded(permit: Permit, note: ApplicationNote, recipients: Assignment[]) {
