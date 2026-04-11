@@ -12,6 +12,7 @@ import {
   editNoteAction,
   deleteNoteAction,
 } from "@/app/(admin)/admin/applications/[id]/note-actions";
+import { NotesForm } from "@/components/permits/notes-form";
 import { ROLE_CONFIG } from "@/lib/validations/roles";
 import type { Role } from "@/lib/validations/roles";
 
@@ -33,6 +34,7 @@ type Props = {
   permitId: string;
   initialNotes: Note[];
   currentUserId: string;
+  currentUserFullName: string;
   currentUserRole: Role;
 };
 
@@ -71,6 +73,7 @@ export function NotesThread({
   permitId,
   initialNotes,
   currentUserId,
+  currentUserFullName,
   currentUserRole,
 }: Props) {
   const router = useRouter();
@@ -87,6 +90,10 @@ export function NotesThread({
   const visibleNotes = isExpanded ? notes : notes.slice(-INITIAL_VISIBLE);
 
   const canDeleteAny = ["admin", "super_admin"].includes(currentUserRole);
+
+  function handleNoteAdded(note: Note) {
+    setNotes((prev) => [...prev, note]);
+  }
 
   function startEdit(note: Note) {
     setEditingId(note.id);
@@ -188,7 +195,6 @@ export function NotesThread({
                   key={note.id}
                   className="border-l-4 border-amber-400 bg-amber-500/5 rounded-r-md p-4 space-y-2"
                 >
-                  {/* Top row */}
                   <div className="flex items-center gap-3 flex-wrap">
                     <Avatar className="h-9 w-9 shrink-0">
                       <AvatarFallback className="text-sm">
@@ -215,7 +221,6 @@ export function NotesThread({
                     )}
                   </div>
 
-                  {/* Body */}
                   {editingId === note.id ? (
                     <div className="space-y-2 pt-1">
                       <Textarea
@@ -247,7 +252,6 @@ export function NotesThread({
                     <p className="text-base whitespace-pre-wrap">{note.body}</p>
                   )}
 
-                  {/* Actions */}
                   {(canEdit || canDelete) && editingId !== note.id && (
                     <div className="flex gap-1 pt-1">
                       {canEdit && (
@@ -296,6 +300,14 @@ export function NotesThread({
           )}
         </>
       )}
+
+      <NotesForm
+        permitId={permitId}
+        currentUserId={currentUserId}
+        currentUserFullName={currentUserFullName}
+        currentUserRole={currentUserRole}
+        onAdd={handleNoteAdded}
+      />
     </div>
   );
 }

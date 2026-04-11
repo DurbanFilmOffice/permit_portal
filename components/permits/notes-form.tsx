@@ -10,12 +10,33 @@ import type { Role } from "@/lib/validations/roles";
 const MIN_LENGTH = 3;
 const MAX_LENGTH = 2000;
 
-type Props = {
-  permitId: string;
-  currentUserRole: Role;
+type Note = {
+  id: string;
+  body: string;
+  createdAt: Date;
+  updatedAt: Date;
+  author: {
+    id: string;
+    fullName: string;
+    role: string;
+  };
 };
 
-export function NotesForm({ permitId, currentUserRole }: Props) {
+type Props = {
+  permitId: string;
+  currentUserId: string;
+  currentUserFullName: string;
+  currentUserRole: Role;
+  onAdd?: (note: Note) => void;
+};
+
+export function NotesForm({
+  permitId,
+  currentUserId,
+  currentUserFullName,
+  currentUserRole,
+  onAdd,
+}: Props) {
   const [body, setBody] = useState("");
   const [error, setError] = useState<string | null>(null);
   const [isPending, startTransition] = useTransition();
@@ -32,6 +53,18 @@ export function NotesForm({ permitId, currentUserRole }: Props) {
         setError(result.error);
         return;
       }
+      const now = new Date();
+      onAdd?.({
+        id: result.note?.id ?? crypto.randomUUID(),
+        body: body.trim(),
+        createdAt: now,
+        updatedAt: now,
+        author: {
+          id: currentUserId,
+          fullName: currentUserFullName,
+          role: currentUserRole,
+        },
+      });
       setBody("");
     });
   }

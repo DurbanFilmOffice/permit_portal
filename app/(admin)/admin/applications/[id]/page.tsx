@@ -105,16 +105,17 @@ export default async function AdminPermitDetailPage({
                   permitId={id}
                   initialComments={comments}
                   currentUserId={session.user.id}
+                  currentUserFullName={session.user.name ?? ""}
                   currentUserRole={session.user.role as Role}
                   permitStatus={permit.status}
                   isExternalUser={false}
                 />
-                <CommentForm
+                {/* <CommentForm
                   permitId={id}
                   currentUserRole={session.user.role as Role}
                   permitStatus={permit.status}
                   isExternalUser={false}
-                />
+                /> */}
               </div>
             )}
           </section>
@@ -126,12 +127,13 @@ export default async function AdminPermitDetailPage({
                 permitId={id}
                 initialNotes={notes}
                 currentUserId={session.user.id}
+                currentUserFullName={session.user.name ?? ""}
                 currentUserRole={session.user.role as Role}
               />
-              <NotesForm
+              {/* <NotesForm
                 permitId={id}
                 currentUserRole={session.user.role as Role}
-              />
+              /> */}
             </div>
           </section>
         </div>
