@@ -7,7 +7,6 @@ import StatusTimeline from "@/components/permits/status-timeline";
 import PermitDocumentsList from "@/components/permits/permit-documents-list";
 import { commentsService } from "@/services/comments.service";
 import { CommentThread } from "@/components/permits/comment-thread";
-import { CommentForm } from "@/components/permits/comment-form";
 import type { Role } from "@/lib/validations/roles";
 
 export default async function PermitDetailPage({
@@ -41,12 +40,12 @@ export default async function PermitDetailPage({
   );
 
   return (
-    <div className="space-y-8 max-w-4xl">
+    <div className="space-y-8">
       <PermitDetailHeader permit={permit} isOwner={isOwner} canEdit={canEdit} />
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Main content — 2/3 width */}
-        <div className="lg:col-span-2 space-y-8">
+        {/* Col 1 — Application Details */}
+        <div className="">
           <section className="border rounded-md bg-card p-6">
             <h2 className="text-lg font-semibold mb-4">Application Details</h2>
             <PermitDetailInfo permit={permit} />
@@ -56,32 +55,31 @@ export default async function PermitDetailPage({
             <h2 className="text-lg font-semibold mb-4">Documents</h2>
             <PermitDocumentsList documents={documents} />
           </section>
-          <section>
-            <h2 className="text-xl font-semibold mb-4">Comments</h2>
+        </div>
+        {/* Col 2 — Sidebar */}
+        <div className="space-y-8">
+          <section className="border rounded-md bg-card p-3">
+            <h2 className="text-lg font-semibold mb-4">Status History</h2>
+            <StatusTimeline history={history} />
+          </section>
+        </div>
+
+        {/* Col 3 — Comments + Notes */}
+
+        <div className="space-y-8">
+          <section className="border rounded-md bg-card p-3">
+            <h2 className="text-lg font-semibold mb-4">Comments</h2>
             <div className="space-y-4">
               <CommentThread
                 permitId={id}
                 initialComments={comments}
                 currentUserId={session.user.id}
-                currentUserRole={session.user.role as Role}
-                permitStatus={permit.status}
-                isExternalUser={false}
-              />
-              <CommentForm
-                permitId={id}
+                currentUserFullName={session.user.name ?? ""}
                 currentUserRole={session.user.role as Role}
                 permitStatus={permit.status}
                 isExternalUser={false}
               />
             </div>
-          </section>
-        </div>
-
-        {/* Sidebar — 1/3 width */}
-        <div className="space-y-8">
-          <section>
-            <h2 className="text-lg font-semibold mb-4">Status History</h2>
-            <StatusTimeline history={history} />
           </section>
         </div>
       </div>

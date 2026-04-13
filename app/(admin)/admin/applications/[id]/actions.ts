@@ -2,15 +2,17 @@
 
 import { auth } from "@/lib/auth";
 import { assignmentsService } from "@/services/assignments.service";
+import { actionSuccess, actionError } from "@/lib/utils/action-response";
+import type { ActionResponse } from "@/lib/utils/action-response";
 import type { Role } from "@/lib/validations/roles";
 
 export async function assignUserAction(
   permitId: string,
   userId: string,
   note?: string,
-): Promise<{ success: true } | { error: string }> {
+): Promise<ActionResponse> {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorised");
+  if (!session?.user) return actionError("Unauthorised");
 
   try {
     await assignmentsService.assignUser(
@@ -20,19 +22,18 @@ export async function assignUserAction(
       session.user.role as Role,
       note,
     );
-    return { success: true };
+    return actionSuccess();
   } catch (err) {
-    if (err instanceof Error) return { error: err.message };
-    return { error: "Failed to assign user" };
+    return actionError(err, "Failed to assign user");
   }
 }
 
 export async function unassignUserAction(
   permitId: string,
   userId: string,
-): Promise<{ success: true } | { error: string }> {
+): Promise<ActionResponse> {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorised");
+  if (!session?.user) return actionError("Unauthorised");
 
   try {
     await assignmentsService.unassignUser(
@@ -40,9 +41,8 @@ export async function unassignUserAction(
       userId,
       session.user.role as Role,
     );
-    return { success: true };
+    return actionSuccess();
   } catch (err) {
-    if (err instanceof Error) return { error: err.message };
-    return { error: "Failed to remove assignment" };
+    return actionError(err, "Failed to remove assignment");
   }
 }

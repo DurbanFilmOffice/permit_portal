@@ -425,27 +425,110 @@ After any schema file change, always run `generate` then review the generated SQ
 
 ## Error handling convention
 
-Services throw typed errors. Route handlers and Server Actions catch them.
+Services throw typed errors. Server Actions catch them and return
+a consistent ActionResponse shape. Never throw unhandled to the client.
+
+### ActionResponse — single source of truth for action returns
 
 ```ts
-// In a service
+// src/lib/utils/action-response.ts
+export type ActionResponse<T = void> =
+  | { success: true; data?: T }
+  | { success: false; error: string }
+
+export function actionSuccess<T>(data?: T): ActionResponse<T>
+export function actionError(err: unknown, fallback?: string): ActionResponse
+```
+
+### Server Action pattern (always use this)
+
+```ts
+// In a Server Action — always return ActionResponse, never throw
+export async function someAction(input: unknown) {
+  const session = await auth()
+  if (!session?.user) return actionError('Unauthorised')
+
+  const parsed = schema.safeParse(input)
+  if (!parsed.success) {
+    return { success: false, error: parsed.error.flatten() }
+  }
+
+  try {
+    const result = await someService.doThing(parsed.data)
+    return actionSuccess(result)
+  } catch (err) {
+    return actionError(err)
+  }
+}
+```
+
+### Displaying errors in components
+
+```ts
+// Form-level error — use FormError component
+import { FormError } from '@/components/shared/form-error'
+import { FormSuccess } from '@/components/shared/form-success'
+
+const [error, setError] = useState<string>()
+const [success, setSuccess] = useState<string>()
+
+const onSubmit = async (values) => {
+  const result = await someAction(values)
+  if (!result.success) {
+    setError(result.error)
+  } else {
+    setSuccess('Changes saved successfully')
+  }
+}
+
+// In JSX
+<FormError message={error} />
+<FormSuccess message={success} />
+<form>...</form>
+```
+
+### Toast pattern (non-form mutations)
+
+```ts
+// For actions outside forms (assign, delete, toggle etc.)
+const result = await someAction(id)
+if (!result.success) {
+  toast.error(result.error)
+} else {
+  toast.success('Done')
+  router.refresh()
+}
+```
+
+### Error boundaries
+
+Every route segment has an error.tsx that catches unhandled throws:
+  src/app/error.tsx                          ← root fallback
+  src/app/(applicant)/error.tsx              ← applicant section
+  src/app/(admin)/error.tsx                  ← admin section
+
+error.tsx MUST be 'use client'. Receives { error, reset } props.
+reset() retries the failed render.
+
+### Services still throw — that is correct
+
+Services throw typed Error objects. The boundary is at the
+Server Action layer — actions catch and convert to ActionResponse.
+Never catch errors in services unless you are handling a specific
+known case.
+
+```ts
+// In a service — throw is correct here
 if (!permit) throw new Error('Permit not found')
 if (permit.userId !== userId) throw new Error('Forbidden')
-
-// In a Server Action
-try {
-  const result = await permitsService.submitPermit(userId, data)
-  return { success: true, data: result }
-} catch (err) {
-  if (err instanceof Error) return { error: err.message }
-  return { error: 'An unexpected error occurred' }
-}
 
 // In a Route Handler
 try {
   const data = await permitsService.getUserPermits(userId)
   return Response.json(data)
 } catch (err) {
-  return Response.json({ error: 'Internal server error' }, { status: 500 })
+  return Response.json(
+    { error: 'Internal server error' }, { status: 500 }
+  )
 }
 ```

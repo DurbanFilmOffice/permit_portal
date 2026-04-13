@@ -56,10 +56,17 @@ When adding a new component or page, do not copy shadcn's default
 8. **Permit form fields all go in `form_data` jsonb.** Never add individual form field columns.
    The only exceptions are `project_name` and `site_address` which are already proper columns.
    See `.claude/architecture.md` for the full field definitions and Zod schema shape.
-9. **Internal notes are never visible to applicants.** `application_notes` is a separate table from `permit_comments`. Never query notes in any applicant-facing context. Enforced at service AND repository layer.
-10. **`external_user` cannot access the applicant comment thread.** Block in `comments.service.ts` — not just in the UI.
-11. **Applicants are never in `permit_assignments`.** The assignment table is for internal users only. Check role before inserting.
-12. **`permit_officer` cannot approve or reject.** Only `permit_admin`, `admin`, and `super_admin` can. Enforce in `permits.service.ts`.
+9. **Every Server Action must return ActionResponse — never throw to the client.**
+   Use `actionSuccess()` and `actionError()` from `src/lib/utils/action-response.ts`.
+   Every action returns either `{ success: true, data? }` or `{ success: false, error: string }`.
+   Wrap all logic in try/catch. No action ever throws unhandled.
+10. **Use FormError and FormSuccess components for form-level feedback.**
+    Import from `src/components/shared/form-error.tsx` and `src/components/shared/form-success.tsx`.
+    Never build one-off Alert components for form errors — use these shared components.
+11. **Internal notes are never visible to applicants.** `application_notes` is a separate table from `permit_comments`. Never query notes in any applicant-facing context. Enforced at service AND repository layer.
+12. **`external_user` cannot access the applicant comment thread.** Block in `comments.service.ts` — not just in the UI.
+13. **Applicants are never in `permit_assignments`.** The assignment table is for internal users only. Check role before inserting.
+14. **`permit_officer` cannot approve or reject.** Only `permit_admin`, `admin`, and `super_admin` can. Enforce in `permits.service.ts`.
 
 ---
 
