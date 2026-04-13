@@ -2,18 +2,22 @@
 
 import { auth } from "@/lib/auth";
 import { usersService } from "@/services/users.service";
+import { actionSuccess, actionError } from "@/lib/utils/action-response";
+import type { ActionResponse } from "@/lib/utils/action-response";
 import type { Role } from "@/lib/validations/roles";
 
-function requireAdminOrAbove(role: string) {
+function requireAdminOrAbove(role: string): ActionResponse | null {
   if (!["admin", "super_admin"].includes(role)) {
-    throw new Error("Unauthorised");
+    return actionError("Unauthorised");
   }
+  return null;
 }
 
 export async function changeRoleAction(targetUserId: string, newRole: Role) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorised");
-  requireAdminOrAbove(session.user.role);
+  if (!session?.user) return actionError("Unauthorised");
+  const authError = requireAdminOrAbove(session.user.role);
+  if (authError) return authError;
 
   try {
     await usersService.changeRole(
@@ -22,37 +26,36 @@ export async function changeRoleAction(targetUserId: string, newRole: Role) {
       session.user.id,
       session.user.role as Role,
     );
-    return { success: true };
+    return actionSuccess();
   } catch (err) {
-    if (err instanceof Error) return { error: err.message };
-    return { error: "Failed to change role" };
+    return actionError(err, "Failed to change role");
   }
 }
 
 export async function deactivateUserAction(targetUserId: string) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorised");
-  requireAdminOrAbove(session.user.role);
+  if (!session?.user) return actionError("Unauthorised");
+  const authError = requireAdminOrAbove(session.user.role);
+  if (authError) return authError;
 
   try {
     await usersService.deactivateUser(targetUserId, session.user.id);
-    return { success: true };
+    return actionSuccess();
   } catch (err) {
-    if (err instanceof Error) return { error: err.message };
-    return { error: "Failed to deactivate user" };
+    return actionError(err, "Failed to deactivate user");
   }
 }
 
 export async function reactivateUserAction(targetUserId: string) {
   const session = await auth();
-  if (!session?.user) throw new Error("Unauthorised");
-  requireAdminOrAbove(session.user.role);
+  if (!session?.user) return actionError("Unauthorised");
+  const authError = requireAdminOrAbove(session.user.role);
+  if (authError) return authError;
 
   try {
     await usersService.reactivateUser(targetUserId);
-    return { success: true };
+    return actionSuccess();
   } catch (err) {
-    if (err instanceof Error) return { error: err.message };
-    return { error: "Failed to reactivate user" };
+    return actionError(err, "Failed to reactivate user");
   }
 }

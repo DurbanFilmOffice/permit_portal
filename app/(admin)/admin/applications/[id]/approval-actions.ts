@@ -1,19 +1,17 @@
-'use server'
+"use server";
 
-import { auth } from '@/lib/auth'
-import { permitsService } from '@/services/permits.service'
-import { canApproveReject } from '@/lib/validations/roles'
-import type { Role } from '@/lib/validations/roles'
+import { auth } from "@/lib/auth";
+import { permitsService } from "@/services/permits.service";
+import { actionSuccess, actionError } from "@/lib/utils/action-response";
+import { canApproveReject } from "@/lib/validations/roles";
+import type { Role } from "@/lib/validations/roles";
 
-export async function approvePermitAction(
-  permitId: string,
-  reason?: string,
-) {
-  const session = await auth()
-  if (!session?.user) throw new Error('Unauthorised')
+export async function approvePermitAction(permitId: string, reason?: string) {
+  const session = await auth();
+  if (!session?.user) return actionError("Unauthorised");
 
   if (!canApproveReject(session.user.role as Role)) {
-    throw new Error('Unauthorised')
+    return actionError("Unauthorised");
   }
 
   try {
@@ -22,23 +20,19 @@ export async function approvePermitAction(
       session.user.id,
       session.user.role as Role,
       reason,
-    )
-    return { success: true }
+    );
+    return actionSuccess();
   } catch (err) {
-    if (err instanceof Error) return { error: err.message }
-    return { error: 'Failed to approve application' }
+    return actionError(err, "Failed to approve application");
   }
 }
 
-export async function rejectPermitAction(
-  permitId: string,
-  reason?: string,
-) {
-  const session = await auth()
-  if (!session?.user) throw new Error('Unauthorised')
+export async function rejectPermitAction(permitId: string, reason?: string) {
+  const session = await auth();
+  if (!session?.user) return actionError("Unauthorised");
 
   if (!canApproveReject(session.user.role as Role)) {
-    throw new Error('Unauthorised')
+    return actionError("Unauthorised");
   }
 
   try {
@@ -47,10 +41,9 @@ export async function rejectPermitAction(
       session.user.id,
       session.user.role as Role,
       reason,
-    )
-    return { success: true }
+    );
+    return actionSuccess();
   } catch (err) {
-    if (err instanceof Error) return { error: err.message }
-    return { error: 'Failed to reject application' }
+    return actionError(err, "Failed to reject application");
   }
 }
