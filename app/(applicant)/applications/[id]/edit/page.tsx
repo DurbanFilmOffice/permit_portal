@@ -2,6 +2,10 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { permitsService } from "@/services/permits.service";
 import PermitForm from "@/components/permits/permit-form";
+import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
+
+type Genre = PermitFormValues["formData"]["genre"];
+type YesNo = "yes" | "no";
 
 export default async function EditPermitPage({
   params,
@@ -34,51 +38,77 @@ export default async function EditPermitPage({
     redirect(`/applications/${id}`);
   }
 
-  // const initialData = {
-  //   projectName: permit.projectName,
-  //   siteAddress: permit.siteAddress ?? "",
-  //   formData: (permit.formData ?? {}) as Record<string, unknown>,
-  // };
   const rawForm = (permit.formData ?? {}) as Record<string, unknown>;
 
-  const initialData = {
+  const str = (v: unknown): string => (typeof v === "string" ? v : "");
+  const strOpt = (v: unknown): string | undefined =>
+    typeof v === "string" ? v : undefined;
+  const num = (v: unknown): number | undefined =>
+    typeof v === "number" ? v : undefined;
+  const arr = (v: unknown): string[] =>
+    Array.isArray(v) ? (v as string[]) : [];
+
+  const GENRES: Genre[] = [
+    "feature_film",
+    "documentary",
+    "reality_show",
+    "tv_series",
+    "tv_commercial",
+    "student_project",
+    "stills_photography",
+    "short_film",
+    "music_video",
+  ];
+  const genre = (v: unknown): Genre =>
+    GENRES.includes(v as Genre) ? (v as Genre) : "feature_film";
+
+  const yesNo = (v: unknown): YesNo => (v === "yes" || v === "no" ? v : "no");
+  const yesNoOpt = (v: unknown): YesNo | undefined =>
+    v === "yes" || v === "no" ? v : undefined;
+
+  const initialData: PermitFormValues = {
     projectName: permit.projectName,
     siteAddress: permit.siteAddress ?? "",
     formData: {
-      companyName: rawForm.companyName ?? "",
-      projectTitle: rawForm.projectTitle ?? "",
-      startDate: rawForm.startDate ?? "",
-      endDate: rawForm.endDate ?? "",
-      descriptionOfScenes: rawForm.descriptionOfScenes ?? "",
-      tags: rawForm.tags ?? "",
-      locationName: rawForm.locationName ?? "",
-      locationAddress: rawForm.locationAddress ?? "",
-      applicantContactNumber: rawForm.applicantContactNumber ?? "",
-      startTime: rawForm.startTime ?? "",
-      wrapTime: rawForm.wrapTime ?? "",
-      genre: rawForm.genre ?? undefined,
-      equipment: rawForm.equipment ?? [],
-      numberOfCrew: rawForm.numberOfCrew ?? undefined,
-      numberOfCars: rawForm.numberOfCars ?? undefined,
-      numberOfCast: rawForm.numberOfCast ?? "",
-      numberOfExtras: rawForm.numberOfExtras ?? "",
-      requiresSfxPermit: rawForm.requiresSfxPermit ?? undefined,
-      gunSupervisorName: rawForm.gunSupervisorName ?? "",
-      sfxGunSupervisorContact: rawForm.sfxGunSupervisorContact ?? "",
-      initiationDetails: rawForm.initiationDetails ?? "",
-      numberOfRounds: rawForm.numberOfRounds ?? "",
-      numberOfResets: rawForm.numberOfResets ?? "",
-      requiresTrafficControl: rawForm.requiresTrafficControl ?? undefined,
-      roadIntersectionName: rawForm.roadIntersectionName ?? "",
-      dateTrafficControlRequired: rawForm.dateTrafficControlRequired ?? "",
-      trafficControlStartDate: rawForm.trafficControlStartDate ?? "",
-      trafficControlEndDate: rawForm.trafficControlEndDate ?? "",
-      trafficStartTimeAndWrapTime: rawForm.trafficStartTimeAndWrapTime ?? "",
-      involveDroneFilming: rawForm.involveDroneFilming ?? undefined,
-      proposedActivityDetails: rawForm.proposedActivityDetails ?? "",
-      droneOperatorHasLicense: rawForm.droneOperatorHasLicense ?? undefined,
-      droneProposedActivityDetails: rawForm.droneProposedActivityDetails ?? "",
-      showAfterCreated: rawForm.showAfterCreated ?? true,
+      companyName: str(rawForm.companyName),
+      projectTitle: str(rawForm.projectTitle),
+      startDate: str(rawForm.startDate),
+      endDate: strOpt(rawForm.endDate),
+      descriptionOfScenes: strOpt(rawForm.descriptionOfScenes),
+      tags: strOpt(rawForm.tags),
+      locationName: str(rawForm.locationName),
+      locationAddress: str(rawForm.locationAddress),
+      applicantContactNumber: str(rawForm.applicantContactNumber),
+      startTime: str(rawForm.startTime),
+      wrapTime: str(rawForm.wrapTime),
+      genre: genre(rawForm.genre),
+      equipment: arr(rawForm.equipment),
+      numberOfCrew: num(rawForm.numberOfCrew),
+      numberOfCars: num(rawForm.numberOfCars),
+      numberOfCast: strOpt(rawForm.numberOfCast),
+      numberOfExtras: strOpt(rawForm.numberOfExtras),
+      requiresSfxPermit: yesNo(rawForm.requiresSfxPermit),
+      gunSupervisorName: strOpt(rawForm.gunSupervisorName),
+      sfxGunSupervisorContact: strOpt(rawForm.sfxGunSupervisorContact),
+      initiationDetails: strOpt(rawForm.initiationDetails),
+      numberOfRounds: strOpt(rawForm.numberOfRounds),
+      numberOfResets: strOpt(rawForm.numberOfResets),
+      requiresTrafficControl: yesNo(rawForm.requiresTrafficControl),
+      roadIntersectionName: strOpt(rawForm.roadIntersectionName),
+      dateTrafficControlRequired: strOpt(rawForm.dateTrafficControlRequired),
+      trafficControlStartDate: strOpt(rawForm.trafficControlStartDate),
+      trafficControlEndDate: strOpt(rawForm.trafficControlEndDate),
+      trafficStartTimeAndWrapTime: strOpt(rawForm.trafficStartTimeAndWrapTime),
+      involveDroneFilming: yesNo(rawForm.involveDroneFilming),
+      proposedActivityDetails: strOpt(rawForm.proposedActivityDetails),
+      droneOperatorHasLicense: yesNoOpt(rawForm.droneOperatorHasLicense),
+      droneProposedActivityDetails: strOpt(
+        rawForm.droneProposedActivityDetails,
+      ),
+      showAfterCreated:
+        typeof rawForm.showAfterCreated === "boolean"
+          ? rawForm.showAfterCreated
+          : true,
     },
   };
 

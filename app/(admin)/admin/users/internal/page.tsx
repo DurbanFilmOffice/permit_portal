@@ -19,6 +19,9 @@ export default async function InternalUsersPage() {
 
   const users = await usersService.getInternalUsers();
 
+  const currentUserId = session.user.id;
+  const requestingRole = session.user.role as Role;
+
   return (
     <div className="space-y-6">
       <div>
@@ -117,7 +120,13 @@ export default async function InternalUsersPage() {
 
                 {/* Actions column */}
                 <td className="p-4">
-                  <UserActionsMenu userId={user.id} />
+                  <UserActionsMenu
+                    userId={user.id}
+                    fullName={user.fullName}
+                    isActive={user.isActive}
+                    currentUserId={currentUserId}
+                    requestingRole={requestingRole}
+                  />
                 </td>
               </tr>
             ))}

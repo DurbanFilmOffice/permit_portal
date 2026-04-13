@@ -74,7 +74,7 @@ export function Header({ title, user, onMobileMenuOpen }: HeaderProps) {
         </Button>
 
         {/* Notification bell */}
-        <NotificationBell count={0} />
+        <NotificationBell role={user.role} />
 
         {/* User dropdown */}
         <DropdownMenu>

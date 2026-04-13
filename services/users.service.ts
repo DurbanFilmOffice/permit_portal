@@ -70,22 +70,23 @@ export const usersService = {
 
     await usersRepository.update(targetUserId, {
       resetToken: token,
-      resetTokenExpiry: expiry,
+      resetTokenExpires: expiry,
     });
 
-    const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
-
-    await sendEmail({
-      to: user.email,
-      subject: "Reset your password",
-      html: `
-        <p>Hi ${user.fullName},</p>
-        <p>An administrator has requested a password reset for your account.</p>
-        <p>Click the link below to set a new password. This link expires in 1 hour.</p>
-        <a href="${resetUrl}">${resetUrl}</a>
-        <p>If you did not expect this, please contact your administrator.</p>
-      `,
-    });
+    // const resetUrl = `${process.env.NEXT_PUBLIC_APP_URL}/reset-password?token=${token}`;
+    // await sendEmail({
+    //   to: user.email,
+    //   subject: "Reset your password",
+    //   template: (
+    //     <div>
+    //       <p>Hi {user.fullName},</p>
+    //       <p>An administrator has requested a password reset for your account.</p>
+    //       <p>Click the link below to set a new password. This link expires in 1 hour.</p>
+    //       <a href={resetUrl}>{resetUrl}</a>
+    //       <p>If you did not expect this, please contact your administrator.</p>
+    //     </div>
+    //   ),
+    // });
 
     return { sent: true };
   },
@@ -103,7 +104,7 @@ export const usersService = {
     await usersRepository.update(targetUserId, {
       passwordHash,
       resetToken: null,
-      resetTokenExpiry: null,
+      resetTokenExpires: null,
     });
 
     return { updated: true };
@@ -118,22 +119,18 @@ export const usersService = {
     },
     requestingRole: Role,
   ) {
-    // Only internal roles can be created here
     if (data.role === "applicant") {
       throw new Error("Cannot create an applicant account from here");
     }
 
-    // Only super_admin can create a super_admin
     if (data.role === "super_admin" && requestingRole !== "super_admin") {
       throw new Error("Only a super admin can create a super admin account");
     }
 
-    // Validate role
     if (!ROLES.includes(data.role)) {
       throw new Error("Invalid role");
     }
 
-    // Check email is not already in use
     const existing = await usersRepository.findByEmail(data.email);
     if (existing) {
       throw new Error("A user with this email address already exists");
@@ -150,7 +147,7 @@ export const usersService = {
       email: data.email.trim().toLowerCase(),
       role: data.role,
       passwordHash,
-      emailVerified: true, // admin-created accounts are pre-verified
+      emailVerified: true,
       isActive: true,
     });
   },

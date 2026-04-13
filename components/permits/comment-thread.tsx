@@ -132,7 +132,7 @@ export function CommentThread({
 
     startTransition(async () => {
       const result = await editCommentAction(commentId, editBody);
-      if (result.error) {
+      if (!result.success) {
         setError(result.error);
         return;
       }
@@ -155,7 +155,7 @@ export function CommentThread({
 
     startTransition(async () => {
       const result = await deleteCommentAction(commentId);
-      if (result.error) {
+      if (!result.success) {
         setError(result.error);
         return;
       }

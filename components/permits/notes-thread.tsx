@@ -114,7 +114,7 @@ export function NotesThread({
     }
     startTransition(async () => {
       const result = await editNoteAction(noteId, editBody);
-      if (result.error) {
+      if (!result.success) {
         setError(result.error);
         return;
       }
@@ -135,7 +135,7 @@ export function NotesThread({
     if (!window.confirm("Delete this note? This cannot be undone.")) return;
     startTransition(async () => {
       const result = await deleteNoteAction(noteId);
-      if (result.error) {
+      if (!result.success) {
         setError(result.error);
         return;
       }

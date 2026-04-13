@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useForm } from "react-hook-form";
+import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
 import { CheckCircle2, Circle } from "lucide-react";
@@ -173,8 +173,8 @@ export default function PermitForm({
       }
     : EMPTY_DEFAULTS;
 
-  const form = useForm<PermitFormValues>({
-    resolver: zodResolver(permitFormSchema),
+  const form = useForm<PermitFormValues, unknown, PermitFormValues>({
+    resolver: zodResolver(permitFormSchema) as Resolver<PermitFormValues>,
     shouldUnregister: false,
     defaultValues: resolvedDefaults,
     mode: "onTouched",

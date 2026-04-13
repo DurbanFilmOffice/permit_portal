@@ -1,13 +1,23 @@
-'use server'
+"use server";
 
-import { registerSchema } from '@/lib/validations/auth.schema'
-import { authService } from '@/services/auth.service'
-import { redirect } from 'next/navigation'
+import { registerSchema } from "@/lib/validations/auth.schema";
+import { authService } from "@/services/auth.service";
+import { redirect } from "next/navigation";
 
-export async function registerAction(formData: unknown) {
-  const parsed = registerSchema.safeParse(formData)
+type RegisterError = {
+  root?: string[];
+  fullName?: string[];
+  email?: string[];
+  password?: string[];
+  confirmPassword?: string[];
+};
+
+export async function registerAction(
+  formData: unknown,
+): Promise<{ error: RegisterError } | void> {
+  const parsed = registerSchema.safeParse(formData);
   if (!parsed.success) {
-    return { error: parsed.error.flatten().fieldErrors }
+    return { error: parsed.error.flatten().fieldErrors };
   }
 
   try {
@@ -15,13 +25,13 @@ export async function registerAction(formData: unknown) {
       fullName: parsed.data.fullName,
       email: parsed.data.email,
       password: parsed.data.password,
-    })
+    });
   } catch (err) {
     if (err instanceof Error) {
-      return { error: { root: [err.message] } }
+      return { error: { root: [err.message] } };
     }
-    return { error: { root: ['Something went wrong. Please try again.'] } }
+    return { error: { root: ["Something went wrong. Please try again."] } };
   }
 
-  redirect('/register/check-email')
+  redirect("/register/check-email");
 }

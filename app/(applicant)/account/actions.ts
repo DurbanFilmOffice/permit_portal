@@ -14,7 +14,7 @@ export async function updateProfileAction(formData: unknown) {
 
   const parsed = updateProfileSchema.safeParse(formData);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.flatten().fieldErrors };
+    return actionError("Validation failed");
   }
 
   try {
@@ -31,7 +31,7 @@ export async function changePasswordAction(formData: unknown) {
 
   const parsed = changePasswordSchema.safeParse(formData);
   if (!parsed.success) {
-    return { success: false, error: parsed.error.flatten().fieldErrors };
+    return actionError("Validation failed");
   }
 
   try {

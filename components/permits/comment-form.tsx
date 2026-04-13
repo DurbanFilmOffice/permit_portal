@@ -70,13 +70,13 @@ export function CommentForm({
 
     startTransition(async () => {
       const result = await addCommentAction(permitId, body);
-      if (result.error) {
+      if (!result.success) {
         setError(result.error);
         return;
       }
       const now = new Date();
       onAdd?.({
-        id: result.comment?.id ?? crypto.randomUUID(),
+        id: result.data?.id ?? crypto.randomUUID(),
         body: body.trim(),
         createdAt: now,
         updatedAt: now,

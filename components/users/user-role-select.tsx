@@ -41,7 +41,7 @@ export default function UserRoleSelect({
 
   async function handleChange(newRole: Role) {
     const result = await changeRoleAction(userId, newRole);
-    if (result.error) {
+    if (!result.success) {
       toast.error(result.error);
     } else {
       toast.success("Role updated successfully");

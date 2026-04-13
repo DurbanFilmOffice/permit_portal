@@ -103,7 +103,7 @@ export default function AssignmentPanel({
         note.trim() || undefined,
       );
 
-      if (result.error) {
+      if (!result.success) {
         setError(result.error);
         toast.error(result.error);
         return;
@@ -123,7 +123,7 @@ export default function AssignmentPanel({
     startTransition(async () => {
       const result = await unassignUserAction(permitId, userId);
 
-      if (result.error) {
+      if (!result.success) {
         toast.error(result.error);
         return;
       }

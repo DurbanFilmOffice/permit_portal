@@ -45,12 +45,8 @@ export default function ProfileForm({ fullName, email }: ProfileFormProps) {
     setRootError(null);
     const result = await updateProfileAction(values);
 
-    if (result?.error) {
-      if (typeof result.error === "string") {
-        setRootError(result.error);
-      } else {
-        setRootError("Failed to update profile");
-      }
+    if (!result.success) {
+      setRootError(result.error);
       return;
     }
 

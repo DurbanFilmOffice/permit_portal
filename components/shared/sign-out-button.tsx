@@ -1,29 +1,36 @@
-'use client'
+"use client";
 
-import { useState } from 'react'
-import { signOut } from 'next-auth/react'
-import { LogOut, Loader2 } from 'lucide-react'
-import { Button } from '@/components/ui/button'
-import { cn } from '@/lib/utils'
+import { useState } from "react";
+import { signOut } from "next-auth/react";
+import { LogOut, Loader2 } from "lucide-react";
+import { Button } from "@/components/ui/button";
+import { cn } from "@/lib/utils";
 
 interface SignOutButtonProps {
-  variant?: 'default' | 'ghost' | 'icon'
-  showIcon?: boolean
-  showLabel?: boolean
-  className?: string
+  // After
+  variant?:
+    | "default"
+    | "ghost"
+    | "outline"
+    | "secondary"
+    | "destructive"
+    | "link";
+  showIcon?: boolean;
+  showLabel?: boolean;
+  className?: string;
 }
 
 export function SignOutButton({
-  variant = 'ghost',
+  variant = "ghost",
   showIcon = true,
   showLabel = true,
   className,
 }: SignOutButtonProps) {
-  const [loading, setLoading] = useState(false)
+  const [loading, setLoading] = useState(false);
 
   async function handleSignOut() {
-    setLoading(true)
-    await signOut({ callbackUrl: '/login' })
+    setLoading(true);
+    await signOut({ callbackUrl: "/login" });
   }
 
   return (
@@ -31,14 +38,15 @@ export function SignOutButton({
       variant={variant}
       onClick={handleSignOut}
       disabled={loading}
-      className={cn('gap-2', className)}
+      className={cn("gap-2", className)}
     >
-      {showIcon && (
-        loading
-          ? <Loader2 className="h-4 w-4 animate-spin" />
-          : <LogOut className="h-4 w-4" />
-      )}
-      {showLabel && 'Sign out'}
+      {showIcon &&
+        (loading ? (
+          <Loader2 className="h-4 w-4 animate-spin" />
+        ) : (
+          <LogOut className="h-4 w-4" />
+        ))}
+      {showLabel && "Sign out"}
     </Button>
-  )
+  );
 }

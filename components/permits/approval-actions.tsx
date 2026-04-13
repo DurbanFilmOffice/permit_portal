@@ -55,7 +55,7 @@ export function ApprovalActions({
   function handleApprove() {
     startTransition(async () => {
       const result = await approvePermitAction(permitId, reason || undefined);
-      if (result.error) {
+      if (!result.success) {
         toast.error(result.error);
       } else {
         setApproveOpen(false);
@@ -68,7 +68,7 @@ export function ApprovalActions({
   function handleReject() {
     startTransition(async () => {
       const result = await rejectPermitAction(permitId, reason || undefined);
-      if (result.error) {
+      if (!result.success) {
         toast.error(result.error);
       } else {
         setRejectOpen(false);

@@ -23,7 +23,7 @@ export const permitsRepository = {
     const conditions = [];
     if (filters?.status) {
       conditions.push(
-        eq(permits.status, filters.status as typeof permits.status.dataType),
+        eq(permits.status, filters.status as typeof permits.status._.data),
       );
     }
     if (filters?.search) {
