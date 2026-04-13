@@ -22,11 +22,8 @@ export default function UserActionsMenu({
 }: UserActionsMenuProps) {
   return (
     <Button variant="outline" size="sm" asChild>
-      <Link
-        href={`/admin/applications?search=${fullName}`}
-        className="text-base"
-      >
-        View applications
+      <Link href={`/admin/users/${userId}`} className="text-base">
+        Edit user
       </Link>
     </Button>
   );
