@@ -65,15 +65,15 @@ export default async function AdminPermitDetailPage({
       />
 
       <div className="grid gap-8 lg:grid-cols-3">
-        {/* Col 1 — Application Details */}
-        <div>
+        {/* Application Details — 2/3 */}
+        <div className="lg:col-span-2">
           <section className="border rounded-md bg-card p-10">
             <h2 className="text-xl font-semibold mb-4">Application Details</h2>
             <PermitDetailInfo permit={permit} />
           </section>
         </div>
 
-        {/* Col 2 — Sidebar */}
+        {/* Sidebar — 1/3, stacked */}
         <div className="space-y-8">
           <section className="border rounded-md bg-card p-3">
             <h2 className="text-xl font-semibold mb-4">Status History</h2>
@@ -87,10 +87,7 @@ export default async function AdminPermitDetailPage({
             currentUserId={session.user.id}
             currentUserRole={session.user.role as Role}
           />
-        </div>
 
-        {/* Col 3 — Comments + Notes */}
-        <div className="space-y-8">
           <section className="border rounded-md bg-card p-3">
             <h2 className="text-xl font-semibold mb-4">Comments</h2>
             {isExternalUser ? (
