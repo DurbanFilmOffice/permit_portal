@@ -98,11 +98,10 @@ export const permitsService = {
   ) {
     return permitsRepository.createDraft({
       userId,
-      permitType: "filming_permit",
       projectName: data.projectName,
       siteAddress: data.formData.locationAddress ?? "",
       description: data.formData.descriptionOfScenes ?? null,
-      formData: data.formData,
+      formData: { ...data.formData, permitType: "filming_permit" },
       status: "draft",
     });
   },

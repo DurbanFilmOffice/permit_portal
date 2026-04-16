@@ -13,16 +13,12 @@ import { Badge } from "@/components/ui/badge";
 import { toast } from "sonner";
 import { restoreCommentAction } from "@/app/(admin)/admin/applications/[id]/restore-actions";
 import { restoreNoteAction } from "@/app/(admin)/admin/applications/[id]/restore-actions";
-import {
-  approvePermitAction,
-  rejectPermitAction,
-} from "@/app/(admin)/admin/applications/[id]/approval-actions";
 import type { Role } from "@/lib/validations/roles";
 
 interface DeletedItem {
   id: string;
   body: string;
-  deletedAt: Date;
+  deletedAt: Date | null;
   createdAt: Date;
   author: { id: string; fullName: string; role: string };
 }
@@ -72,7 +68,8 @@ export function DeletedItemsPanel({
     }
   };
 
-  const formatDate = (date: Date) => {
+  const formatDate = (date: Date | null) => {
+    if (!date) return "—";
     return new Date(date).toLocaleDateString("en-ZA", {
       day: "numeric",
       month: "short",

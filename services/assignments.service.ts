@@ -61,7 +61,9 @@ export const assignmentsService = {
           {
             id: permit.id,
             projectName: permit.projectName,
-            permitType: permit.permitType,
+            permitType:
+              ((permit.formData as Record<string, unknown>)
+                ?.permitType as string) ?? "—",
           },
           {
             id: assignedUser.id,

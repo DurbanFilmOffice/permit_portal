@@ -51,7 +51,7 @@ export default function PermitDetailInfo({ permit }: PermitDetailInfoProps) {
     typeof fd[key] === "string" ? (fd[key] as string) : "";
 
   const genre = GENRE_LABELS[str("genre")] ?? str("genre") ?? "—";
-  const permitType = permit.permitType ?? "—";
+  const permitType = str("permitType") || "—";
 
   const equipment = Array.isArray(fd.equipment)
     ? (fd.equipment as string[])
