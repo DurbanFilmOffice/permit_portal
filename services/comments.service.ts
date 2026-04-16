@@ -80,4 +80,18 @@ export const commentsService = {
 
     return commentsRepository.delete(commentId);
   },
+
+  async getDeletedComments(permitId: string, requestingRole: Role) {
+    if (!["admin", "super_admin"].includes(requestingRole)) {
+      throw new Error("You do not have permission to view deleted comments");
+    }
+    return commentsRepository.findByPermitWithDeleted(permitId);
+  },
+
+  async restoreComment(commentId: string, restorerRole: Role) {
+    if (!["admin", "super_admin"].includes(restorerRole)) {
+      throw new Error("You do not have permission to restore comments");
+    }
+    return commentsRepository.restore(commentId);
+  },
 };

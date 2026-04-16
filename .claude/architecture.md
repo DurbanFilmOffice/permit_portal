@@ -19,10 +19,12 @@ src/
 ├── services/                     # ALL business logic — call from route handlers only
 │   ├── auth.service.ts
 │   ├── permits.service.ts        # includes approvePermit, rejectPermit
-│   ├── comments.service.ts       # applicant-facing thread, enforces visibility rules
-│   ├── notes.service.ts          # internal notes, enforces internal-only visibility
+│   ├── comments.service.ts       # applicant-facing thread, enforces visibility + soft delete rules
+│   ├── notes.service.ts          # internal notes, enforces internal-only visibility + soft deletes
 │   ├── assignments.service.ts    # assign/unassign users to permits
 │   ├── notifications.service.ts  # email + portal notification dispatch
+│   ├── account.service.ts        # user profile + password changes
+│   ├── users.service.ts          # admin user management (role changes, deactivation)
 │   ├── analytics.service.ts
 │   └── workflow.service.ts       # STUBS ONLY — do not implement
 │
@@ -89,6 +91,9 @@ role: text not null default 'applicant'
   ← NOT a pgEnum — plain text so new roles can be added without migrations
   ← Validated at application layer via Zod (see Role strategy section below)
 email_verified: bool, verification_token, reset_token, reset_token_expires
+is_active: bool not null default true
+  ← false = account deactivated, login blocked in Auth.js authorize()
+  ← Never delete users — deactivate instead
 created_at, updated_at
 ```
 
@@ -116,11 +121,14 @@ changed_at
 ```
 id, permit_id FK→permits ON DELETE CASCADE, author_id FK→users
 body: text, created_at, updated_at
+deleted_at: timestamptz (nullable) ← soft delete — never hard DELETE this table
 ```
 Visibility: applicant + all internal roles (permit_officer, permit_admin, admin, super_admin).
 external_user CANNOT see or write to this table.
 Write rules: applicants only when status is submitted|under_review|returned. Internal roles any status.
 Flat list, ordered by created_at ASC.
+Soft delete: set deleted_at = NOW() instead of DELETE. Only admin/super_admin can view and restore.
+All normal queries filter WHERE deleted_at IS NULL.
 
 ### `permit_assignments` ← NEW
 ```
@@ -147,6 +155,7 @@ author_id: uuid FK→users
 body: text not null
 created_at: timestamptz defaultNow
 updated_at: timestamptz defaultNow
+deleted_at: timestamptz (nullable) ← soft delete — never hard DELETE this table
 ```
 SEPARATE table from permit_comments — not an is_internal flag.
 Separation is intentional: a query bug can never accidentally expose notes to applicants.
@@ -154,6 +163,8 @@ Visibility: internal roles only (permit_officer, permit_admin, external_user, ad
 Applicants NEVER see this. Enforced at service layer AND repository layer (separate queries).
 On insert → notify all users in permit_assignments for this permit except the note author.
 Flat list, ordered by created_at ASC.
+Soft delete: set deleted_at = NOW() instead of DELETE. Only admin/super_admin can view and restore.
+All normal queries filter WHERE deleted_at IS NULL.
 
 ### `emails` (confirmed templates)
 ```
@@ -370,10 +381,47 @@ if notification latency becomes an issue.
 
 ---
 
+## Database performance
+
+### Indexes
+All critical indexes are defined in schema files using Drizzle's index() helper.
+Key indexes that must exist:
+  permits:                  user_id, status, created_at, (user_id, status) composite
+  permit_assignments:       user_id, permit_id
+  portal_notifications:     user_id, (user_id, is_read), (user_id, created_at)
+  permit_comments:          permit_id
+  application_notes:        permit_id
+  permit_status_history:    permit_id, changed_by
+  permit_documents:         permit_id
+  users:                    role
+  email_log:                permit_id
+
+### Connection pooling
+Use Supabase's pooling connection string for the app (port 6543 via PgBouncer).
+Use the direct connection string only for migrations (port 5432).
+
+  .env (app runtime):
+    DATABASE_URL=postgresql://...@aws-0-[region].pooler.supabase.com:6543/postgres
+
+  .env (migrations only):
+    DIRECT_DATABASE_URL=postgresql://...@db.[ref].supabase.co:5432/postgres
+
+### Soft deletes
+permit_comments and application_notes use soft deletes.
+Never run DELETE on these tables — always set deleted_at = NOW().
+All repository findByPermit queries filter WHERE deleted_at IS NULL.
+Only admin and super_admin can view deleted items via findByPermitWithDeleted().
+Only admin and super_admin can restore items via the restore() method.
+
 ## Environment variables
 
 ```bash
-DATABASE_URL=postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres
+# App runtime — use pooling connection (PgBouncer, port 6543)
+DATABASE_URL=postgresql://postgres:[password]@aws-0-[region].pooler.supabase.com:6543/postgres
+
+# Migrations only — use direct connection (port 5432)
+DIRECT_DATABASE_URL=postgresql://postgres:[password]@db.[ref].supabase.co:5432/postgres
+
 NEXTAUTH_SECRET=          # openssl rand -base64 32
 NEXTAUTH_URL=http://localhost:3000
 RESEND_API_KEY=
@@ -384,7 +432,8 @@ NEXT_PUBLIC_APP_URL=http://localhost:3000
 NODE_ENV=development
 ```
 
-Changing DB host = change `DATABASE_URL` only. Nothing else.
+Changing DB host = change DATABASE_URL and DIRECT_DATABASE_URL only. Nothing else.
+For self-hosting: remove SUPABASE_URL and SUPABASE_ANON_KEY, add SMTP env vars.
 
 ---
 
@@ -515,10 +564,12 @@ showAfterCreated   boolean   default true
 ```
 
 ### Rich text editor
-Use **Tiptap** (already a common Next.js choice, lightweight).
-Install: `bun add @tiptap/react @tiptap/pm @tiptap/starter-kit`
-Stored as HTML string in form_data jsonb.
-Rendered as sanitised HTML on detail/review pages.
+Rich text fields use a plain **Textarea** wrapped in a `RichTextEditor` component
+at `src/components/permits/rich-text-editor.tsx`.
+Tiptap was removed — do not reinstall it.
+Values stored as plain text strings in form_data jsonb.
+Rendered with `whitespace-pre-wrap` on detail/review pages.
+No dangerouslySetInnerHTML — no sanitisation needed.
 
 ### Conditional field rules
 - SFX fields (gun supervisor, initiation, etc.) → visible only when requiresSfxPermit = 'yes'

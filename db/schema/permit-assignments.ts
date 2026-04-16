@@ -1,4 +1,11 @@
-import { pgTable, uuid, text, timestamp, unique } from "drizzle-orm/pg-core";
+import {
+  pgTable,
+  uuid,
+  text,
+  timestamp,
+  unique,
+  index,
+} from "drizzle-orm/pg-core";
 import { permits } from "./permits";
 import { users } from "./users";
 
@@ -32,6 +39,8 @@ export const permitAssignments = pgTable(
   (t) => ({
     // One assignment row per user per permit
     uniqUserPermit: unique().on(t.permitId, t.userId),
+    userIdIdx: index("permit_assignments_user_id_idx").on(t.userId),
+    permitIdIdx: index("permit_assignments_permit_id_idx").on(t.permitId),
   }),
 );
 

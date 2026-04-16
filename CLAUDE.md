@@ -67,6 +67,7 @@ When adding a new component or page, do not copy shadcn's default
 12. **`external_user` cannot access the applicant comment thread.** Block in `comments.service.ts` — not just in the UI.
 13. **Applicants are never in `permit_assignments`.** The assignment table is for internal users only. Check role before inserting.
 14. **`permit_officer` cannot approve or reject.** Only `permit_admin`, `admin`, and `super_admin` can. Enforce in `permits.service.ts`.
+15. **Soft deletes on permit_comments and application_notes.** Never hard DELETE these rows. Always set `deleted_at = NOW()`. Only `admin` and `super_admin` can view and restore deleted items. Enforced at service layer.
 
 ---
 
@@ -74,7 +75,7 @@ When adding a new component or page, do not copy shadcn's default
 
 | Concern | Choice |
 |---|---|
-| Framework | Next.js 15 — App Router |
+| Framework | Next.js 16 — App Router |
 | Runtime | Bun |
 | Language | TypeScript strict |
 | Styling | Tailwind CSS v4 + shadcn/ui |
@@ -132,22 +133,22 @@ Key distinctions:
 
 ```
 /app/(auth)/        → public
-/app/(applicant)/     → any authenticated user
-/app/(admin)/       → permit_officer | admin | super_admin
+/app/(applicant)/   → any authenticated user
+/app/(admin)/       → external_user | permit_officer | permit_admin | admin | super_admin
 /app/(admin)/users  → admin | super_admin
 /app/(admin)/config → super_admin only
 ```
+Note: proxy.ts (not middleware.ts) enforces these rules. Next.js 16 renamed middleware to proxy.
 
 ---
 
 ## Not built yet — do not implement
 
 - Workflow engine (`workflow.service.ts` exists as stubs — see `.claude/architecture.md`)
-- Permit form submission logic (form fields are now defined in `.claude/architecture.md`
-  — build the form UI in Phase 4 session 12)
+- Permit form is fully built — multi-step wizard, plain Textarea for rich text fields (Tiptap removed)
 - Document upload (requirements changing — individual upload per document type coming later.
   Do not build any file upload UI or storage logic until explicitly instructed.)
-- Auth.js (proxy is passthrough skeleton — add after scaffold is reviewed)
+- Auth.js proxy is fully configured (proxy.ts handles RBAC)
 - Redis / job queue (synchronous email sends are fine for MVP)
 - WebSocket notifications (polling every 30s is sufficient)
 - Comment threading (flat list only)

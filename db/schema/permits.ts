@@ -5,11 +5,10 @@ import {
   timestamp,
   pgEnum,
   jsonb,
+  index,
 } from "drizzle-orm/pg-core";
 import { users } from "./users";
 
-// permit_status uses pgEnum — it is a closed system that changes only via
-// deliberate migration. This is intentional. users.role does NOT use pgEnum.
 export const permitStatusEnum = pgEnum("permit_status", [
   "draft",
   "submitted",
@@ -19,29 +18,37 @@ export const permitStatusEnum = pgEnum("permit_status", [
   "returned",
 ]);
 
-export type PermitStatus = (typeof permitStatusEnum.enumValues)[number];
+export const permits = pgTable(
+  "permits",
+  {
+    id: uuid("id").primaryKey().defaultRandom(),
+    userId: uuid("user_id")
+      .notNull()
+      .references(() => users.id),
+    status: permitStatusEnum("status").notNull().default("draft"),
+    projectName: text("project_name").notNull(),
+    siteAddress: text("site_address").notNull(),
+    description: text("description"),
+    formData: jsonb("form_data"), // all dynamic form fields — never add individual columns
+    submittedAt: timestamp("submitted_at", { withTimezone: true }),
+    createdAt: timestamp("created_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+    updatedAt: timestamp("updated_at", { withTimezone: true })
+      .defaultNow()
+      .notNull(),
+  },
+  (table) => ({
+    userIdIdx: index("permits_user_id_idx").on(table.userId),
+    statusIdx: index("permits_status_idx").on(table.status),
+    createdAtIdx: index("permits_created_at_idx").on(table.createdAt),
+    userStatusIdx: index("permits_user_id_status_idx").on(
+      table.userId,
+      table.status,
+    ),
+  }),
+);
 
-export const permits = pgTable("permits", {
-  id: uuid("id").primaryKey().defaultRandom(),
-  userId: uuid("user_id")
-    .notNull()
-    .references(() => users.id),
-  permitType: text("permit_type").notNull(),
-  status: permitStatusEnum("status").notNull().default("draft"),
-  projectName: text("project_name").notNull(),
-  siteAddress: text("site_address").notNull(),
-  description: text("description"),
-  // ALL dynamic permit form fields live here.
-  // Never add individual form field columns to this table.
-  formData: jsonb("form_data"),
-  submittedAt: timestamp("submitted_at", { withTimezone: true }),
-  createdAt: timestamp("created_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-  updatedAt: timestamp("updated_at", { withTimezone: true })
-    .notNull()
-    .defaultNow(),
-});
-
+// Always export inferred types — never hand-write them
 export type Permit = typeof permits.$inferSelect;
 export type NewPermit = typeof permits.$inferInsert;
