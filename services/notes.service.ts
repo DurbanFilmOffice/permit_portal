@@ -86,4 +86,18 @@ export const notesService = {
 
     return notesRepository.delete(noteId);
   },
+
+  async getDeletedNotes(permitId: string, requestingRole: Role) {
+    if (!["admin", "super_admin"].includes(requestingRole)) {
+      throw new Error("You do not have permission to view deleted notes");
+    }
+    return notesRepository.findByPermitWithDeleted(permitId);
+  },
+
+  async restoreNote(noteId: string, restorerRole: Role) {
+    if (!["admin", "super_admin"].includes(restorerRole)) {
+      throw new Error("You do not have permission to restore notes");
+    }
+    return notesRepository.restore(noteId);
+  },
 };

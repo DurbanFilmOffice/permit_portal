@@ -14,6 +14,7 @@ import { CommentForm } from "@/components/permits/comment-form";
 import { notesService } from "@/services/notes.service";
 import { NotesThread } from "@/components/permits/notes-thread";
 import { NotesForm } from "@/components/permits/notes-form";
+import { DeletedItemsPanel } from "@/components/permits/deleted-items-panel";
 
 export default async function AdminPermitDetailPage({
   params,
@@ -46,6 +47,7 @@ export default async function AdminPermitDetailPage({
   ]);
 
   const isExternalUser = session.user.role === "external_user";
+  const isAdminOrAbove = ["admin", "super_admin"].includes(session.user.role);
 
   const [comments, notes] = await Promise.all([
     isExternalUser
@@ -53,6 +55,13 @@ export default async function AdminPermitDetailPage({
       : commentsService.getComments(id, session.user.role as Role),
     notesService.getNotes(id, session.user.role as Role),
   ]);
+
+  const [deletedComments, deletedNotes] = isAdminOrAbove
+    ? await Promise.all([
+        commentsService.getDeletedComments(id, session.user.role as Role),
+        notesService.getDeletedNotes(id, session.user.role as Role),
+      ])
+    : [[], []];
 
   return (
     <div className="space-y-8">
@@ -115,6 +124,11 @@ export default async function AdminPermitDetailPage({
                 /> */}
               </div>
             )}
+            <DeletedItemsPanel
+              type="comments"
+              deletedItems={deletedComments}
+              currentUserRole={session.user.role as Role}
+            />
           </section>
 
           <section className="border rounded-md bg-card p-3">
@@ -132,6 +146,11 @@ export default async function AdminPermitDetailPage({
                 currentUserRole={session.user.role as Role}
               /> */}
             </div>
+            <DeletedItemsPanel
+              type="notes"
+              deletedItems={deletedNotes}
+              currentUserRole={session.user.role as Role}
+            />
           </section>
         </div>
       </div>

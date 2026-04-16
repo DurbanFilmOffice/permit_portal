@@ -35,6 +35,7 @@ function formatDate(date: Date | string | null): string {
 }
 
 function formatPermitType(type: string): string {
+  if (!type) return "—";
   return type.charAt(0).toUpperCase() + type.slice(1).replace(/_/g, " ");
 }
 

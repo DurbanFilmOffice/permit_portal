@@ -72,6 +72,13 @@ Validation happens here at the application layer.
 To add a new role: add it to ROLES array + update ROLE_CONFIG in roles.ts. No migration needed.
 See the Role strategy section in `.claude/architecture.md` for the full checklist.
 
+Key services that use role checks:
+  comments.service.ts  → canAccessApplicantThread() blocks external_user
+  notes.service.ts     → isInternalRole() blocks applicant
+  permits.service.ts   → canApproveReject() blocks permit_officer and below
+  users.service.ts     → admin/super_admin only for role changes and deactivation
+  assignments.service.ts → isInternalRole() prevents applicant assignment
+
 ---
 
 ```ts
@@ -102,6 +109,53 @@ export type NewPermit = typeof permits.$inferInsert
 ```
 
 ---
+
+## Soft delete pattern
+
+permit_comments and application_notes use soft deletes.
+Never use db.delete() on these tables. Always set deleted_at.
+
+```ts
+// WRONG — hard delete, never do this on comments or notes
+delete: (id: string) =>
+  db.delete(permitComments).where(eq(permitComments.id, id)),
+
+// CORRECT — soft delete
+delete: (id: string) =>
+  db.update(permitComments)
+    .set({ deletedAt: new Date() })
+    .where(eq(permitComments.id, id)),
+
+// CORRECT — normal query always filters deleted rows
+findByPermit: (permitId: string) =>
+  db.select()
+    .from(permitComments)
+    .where(
+      and(
+        eq(permitComments.permitId, permitId),
+        isNull(permitComments.deletedAt)   ← always include this
+      )
+    ),
+
+// CORRECT — admin-only query includes deleted rows
+findByPermitWithDeleted: (permitId: string) =>
+  db.select()
+    .from(permitComments)
+    .where(
+      and(
+        eq(permitComments.permitId, permitId),
+        isNotNull(permitComments.deletedAt)
+      )
+    ),
+
+// CORRECT — restore
+restore: (id: string) =>
+  db.update(permitComments)
+    .set({ deletedAt: null })
+    .where(eq(permitComments.id, id))
+    .returning()
+    .then(r => r[0]),
+```
 
 ## Repository pattern
 
