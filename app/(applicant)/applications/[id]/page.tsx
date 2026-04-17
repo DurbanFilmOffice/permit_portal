@@ -7,6 +7,7 @@ import StatusTimeline from "@/components/permits/status-timeline";
 import PermitDocumentsList from "@/components/permits/permit-documents-list";
 import { commentsService } from "@/services/comments.service";
 import { CommentThread } from "@/components/permits/comment-thread";
+import { APPLICANT_EDITABLE_STATUSES } from "@/lib/validations/permit-status";
 import type { Role } from "@/lib/validations/roles";
 
 export default async function PermitDetailPage({
@@ -32,8 +33,8 @@ export default async function PermitDetailPage({
 
   const { permit, history, documents } = detail;
   const isOwner = permit.userId === session.user.id;
-  const editableStatuses = ["draft", "submitted", "returned"];
-  const canEdit = isOwner && editableStatuses.includes(permit.status);
+  const canEdit =
+    isOwner && APPLICANT_EDITABLE_STATUSES.includes(permit.status as never);
   const comments = await commentsService.getComments(
     id,
     session.user.role as Role,

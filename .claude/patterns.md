@@ -192,6 +192,106 @@ export const permitsRepository = {
 
 ---
 
+## Status change service pattern
+
+Status is stored as TEXT — not pgEnum. Validated by Zod permitStatusSchema.
+Import PERMIT_STATUSES and STATUS_CONFIG from
+  `src/lib/validations/permit-status.ts`
+
+```ts
+// src/services/permits.service.ts
+// Single method handles ALL status transitions
+// Never duplicate logic across approvePermit / rejectPermit etc.
+
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  draft:       ['submitted'],
+  submitted:   ['in_review', 'incomplete', 'approved', 'rejected'],
+  in_review:   ['in_progress', 'incomplete', 'approved', 'rejected'],
+  in_progress: ['incomplete', 'approved', 'rejected'],
+  incomplete:  ['submitted'],  // applicant resubmit only
+  approved:    [],             // terminal
+  rejected:    [],             // terminal
+}
+
+const CAN_REVIEW: Role[] = [
+  'permit_officer', 'permit_admin', 'admin', 'super_admin'
+]
+const CAN_FINALISE: Role[] = ['permit_admin', 'admin', 'super_admin']
+
+async changeStatus(
+  permitId: string,
+  newStatus: string,
+  requestingUserId: string,
+  requestingRole: Role,
+  reason?: string
+) {
+  // 1. Block external_user and applicant entirely
+  if (['external_user', 'applicant'].includes(requestingRole)) {
+    throw new Error('You cannot change application status')
+  }
+
+  // 2. Fetch permit
+  const permit = await permitsRepository.findById(permitId)
+  if (!permit) throw new Error('Application not found')
+
+  // 3. Validate transition is allowed
+  const allowed = VALID_TRANSITIONS[permit.status] ?? []
+  if (!allowed.includes(newStatus)) {
+    throw new Error(
+      `Cannot move from ${permit.status} to ${newStatus}`
+    )
+  }
+
+  // 4. Validate role has permission for this specific transition
+  const finalisingStatuses = ['approved', 'rejected']
+  if (finalisingStatuses.includes(newStatus) &&
+      !CAN_FINALISE.includes(requestingRole)) {
+    throw new Error('You do not have permission to approve or reject')
+  }
+  if (!CAN_REVIEW.includes(requestingRole)) {
+    throw new Error('You do not have permission to change status')
+  }
+
+  // 5. Update status
+  const updated = await permitsRepository.update(permitId, {
+    status: newStatus,
+    ...(newStatus === 'submitted' ? { submittedAt: new Date() } : {}),
+  })
+
+  // 6. Write status history
+  await permitStatusHistoryRepository.create({
+    permitId,
+    changedBy: requestingUserId,
+    oldStatus: permit.status,
+    newStatus,
+    comment: reason ?? null,
+  })
+
+  // 7. Notify applicant — fire and forget
+  notificationsService.onStatusChanged(updated, reason)
+    .catch(err => console.error('Status notification failed:', err))
+
+  return updated
+}
+```
+
+## StatusBadge — uses STATUS_CONFIG
+
+```ts
+// src/components/permits/status-badge.tsx
+// Import STATUS_CONFIG from permit-status.ts — never hardcode colours
+import { STATUS_CONFIG } from '@/lib/validations/permit-status'
+
+export function StatusBadge({ status }: { status: string }) {
+  const config = STATUS_CONFIG[status as PermitStatus]
+  return (
+    <Badge className={config?.badgeClass ?? 'bg-secondary'}>
+      {config?.label ?? status}
+    </Badge>
+  )
+}
+```
+
 ## Service pattern
 
 ```ts

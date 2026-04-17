@@ -48,6 +48,10 @@ src/
 │   ├── email.ts                  # email provider abstraction (Resend / Nodemailer)
 │   ├── auth.ts                   # Auth.js config
 │   └── validations/              # Zod schemas shared between client + server
+│       ├── roles.ts              # ROLES, Role, ROLE_CONFIG, canApproveReject etc.
+│       ├── permit-status.ts      # PERMIT_STATUSES, PermitStatus, STATUS_CONFIG
+│       ├── permit-form.schema.ts # full permit form Zod schema + GENRE_OPTIONS
+│       └── auth.schema.ts        # register, login, reset password schemas
 │
 ├── emails/                       # React Email templates
 │   ├── permit-submitted.tsx
@@ -59,7 +63,8 @@ src/
 ├── components/
 │   ├── ui/                       # shadcn/ui components (owned — do not re-install over customisations)
 │   ├── shared/                   # layout: sidebar, header, dashboard-shell, theme-provider
-│   ├── permits/                  # applications-table, comment-thread, comment-form, approval-actions
+│   ├── permits/                  # applications-table, comment-thread, comment-form,
+│   │                               # application-status-actions (replaces approval-actions)
 │   │   └── permit-form/          # multi-step form (build when form fields are defined)
 │   ├── notifications/            # notification-bell
 │   └── dashboard/                # KPI cards, charts
@@ -99,7 +104,12 @@ created_at, updated_at
 
 ### `permits`
 ```
-id, user_id FK→users, permit_type, status: enum(draft,submitted,under_review,approved,rejected,returned)
+id, user_id FK→users, permit_type
+status: text not null default 'draft'
+  ← NOT a pgEnum — plain text so statuses can change without migrations
+  ← Validated at application layer via Zod permitStatusSchema
+  ← Valid values: draft | submitted | in_review | in_progress |
+                  incomplete | approved | rejected
 project_name, site_address, description
 form_data: jsonb  ← ALL dynamic form fields go here, never as columns
 submitted_at, created_at, updated_at
@@ -380,6 +390,97 @@ if notification latency becomes an issue.
 - [ ] Max resubmission attempts before permanent rejection?
 
 ---
+
+## Status management
+
+### Status values (text column — not pgEnum)
+Stored as plain text in permits.status. Validated by Zod permitStatusSchema.
+To add or rename a status: update the Zod schema only. No migration needed.
+
+```ts
+// src/lib/validations/permit-status.ts
+export const PERMIT_STATUSES = [
+  'draft',
+  'submitted',
+  'in_review',
+  'in_progress',
+  'incomplete',   // replaces 'returned' — applicant edits and resubmits
+  'approved',
+  'rejected',
+] as const
+
+export type PermitStatus = typeof PERMIT_STATUSES[number]
+export const permitStatusSchema = z.enum(PERMIT_STATUSES)
+
+// Display config for UI
+export const STATUS_CONFIG: Record<PermitStatus, {
+  label: string
+  badgeClass: string
+}> = {
+  draft:       { label: 'Draft',       badgeClass: 'bg-secondary text-secondary-foreground' },
+  submitted:   { label: 'Submitted',   badgeClass: 'bg-blue-500/15 text-blue-600 dark:text-blue-400' },
+  in_review:   { label: 'In Review',   badgeClass: 'bg-amber-500/15 text-amber-600 dark:text-amber-400' },
+  in_progress: { label: 'In Progress', badgeClass: 'bg-teal-500/15 text-teal-600 dark:text-teal-400' },
+  incomplete:  { label: 'Incomplete',  badgeClass: 'bg-purple-500/15 text-purple-600 dark:text-purple-400' },
+  approved:    { label: 'Approved',    badgeClass: 'bg-green-500/15 text-green-600 dark:text-green-400' },
+  rejected:    { label: 'Rejected',    badgeClass: 'bg-red-500/15 text-red-600 dark:text-red-400' },
+}
+```
+
+### Valid transitions
+Enforced in `permits.service.ts` — never in components or route handlers.
+
+```ts
+const VALID_TRANSITIONS: Record<string, string[]> = {
+  draft:       ['submitted'],
+  submitted:   ['in_review', 'incomplete', 'approved', 'rejected'],
+  in_review:   ['in_progress', 'incomplete', 'approved', 'rejected'],
+  in_progress: ['incomplete', 'approved', 'rejected'],
+  incomplete:  ['submitted'],   // applicant resubmit only
+  approved:    [],              // terminal
+  rejected:    [],              // terminal
+}
+```
+
+### Role permissions per transition
+```ts
+// Can move to in_review, in_progress, incomplete
+const CAN_REVIEW: Role[] = [
+  'permit_officer', 'permit_admin', 'admin', 'super_admin'
+]
+
+// Can approve or reject
+const CAN_FINALISE: Role[] = [
+  'permit_admin', 'admin', 'super_admin'
+]
+
+// Cannot change any status
+const CANNOT_CHANGE_STATUS: Role[] = ['external_user', 'applicant']
+```
+
+### Every transition must:
+1. Validate the transition is allowed (VALID_TRANSITIONS)
+2. Validate the user's role has permission for that specific transition
+3. Update permit.status
+4. Write a row to permit_status_history (with optional reason)
+5. Call notificationsService.onStatusChanged() — fire and forget
+
+### Migration note
+The existing permit_status pgEnum must be replaced with a text column.
+This requires a migration that:
+1. Adds a new text column status_new
+2. Copies existing values (mapping old → new names where needed)
+3. Drops the old enum column
+4. Renames status_new to status
+Old value mapping: under_review → in_review, returned → incomplete
+
+### UI component
+`ApplicationStatusActions` — replaces the old `ApprovalActions` component.
+Renders contextual buttons based on current status and user role:
+  permit_officer sees:    In Review | Mark In Progress | Mark Incomplete
+  permit_admin and above: all of the above + Approve | Reject
+Never shows buttons for invalid transitions or unauthorised roles.
+Each button opens an AlertDialog with an optional reason textarea.
 
 ## Database performance
 
@@ -712,10 +813,17 @@ Phase 7 — Internal notes
   25. Wire into internal permit detail page (hidden from applicant view entirely)
   26. Notification on note: notify all permit_assignments users except author
 
-Phase 8 — Approval / Rejection
-  27. approval-actions component (AlertDialog — permit_admin + above only)
-  28. approvePermit / rejectPermit in permits.service
-  29. permit-status-update email template + portal notification
+Phase 8 — Status management (UPDATED)
+  27. ApplicationStatusActions component — replaces ApprovalActions
+      Shows contextual buttons based on current status + user role:
+        permit_officer:              Start Review | Return to Applicant
+        permit_admin/admin/super:    Start Review | Return | Approve | Reject
+      Each action uses AlertDialog with optional reason textarea
+  28. changeStatus() in permits.service — validates transition + role,
+      updates status, writes permit_status_history row, fires notification
+  29. approvePermit / rejectPermit absorbed into changeStatus()
+  30. permit-status-update email + portal notification for ALL transitions
+      not just approve/reject
 
 Phase 9 — Notification bell
   30. portal-notifications.repository

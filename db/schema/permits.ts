@@ -25,7 +25,9 @@ export const permits = pgTable(
     userId: uuid("user_id")
       .notNull()
       .references(() => users.id),
-    status: permitStatusEnum("status").notNull().default("draft"),
+    status: text("status").notNull().default("draft"),
+    // Validated by permitStatusSchema in permit-status.ts
+    // NOT a pgEnum — statuses can change without migrations
     projectName: text("project_name").notNull(),
     siteAddress: text("site_address").notNull(),
     description: text("description"),
