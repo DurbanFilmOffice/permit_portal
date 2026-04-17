@@ -9,6 +9,8 @@ import { PermitStatusUpdateEmail } from "@/emails/permit-status-update";
 import { PermitCommentEmail } from "@/emails/permit-comment";
 import { InternalNoteNotificationEmail } from "@/emails/internal-note-notification";
 import AssignmentNotificationEmail from "@/emails/assignment-notification";
+import { STATUS_CONFIG } from "@/lib/validations/permit-status";
+import type { PermitStatus } from "@/lib/validations/permit-status";
 
 const APP_URL = process.env.NEXT_PUBLIC_APP_URL ?? "";
 
@@ -64,7 +66,7 @@ export const notificationsService = {
     );
   },
 
-  // Called when permit is approved, rejected, or returned
+  // Called on every status transition
   async onStatusChanged(
     permit: {
       id: string;
@@ -86,15 +88,17 @@ export const notificationsService = {
     > = {
       approved: "permit_approved",
       rejected: "permit_rejected",
-      returned: "status_changed",
     };
     const type = typeMap[permit.status] ?? "status_changed";
+
+    const statusLabel =
+      STATUS_CONFIG[permit.status as PermitStatus]?.label ?? permit.status;
 
     // Portal notification to applicant
     await portalNotificationsRepository.create({
       userId: applicant.id,
       type,
-      title: `Your application has been ${permit.status}`,
+      title: `Your application status has been updated to: ${statusLabel}`,
       body: reason
         ? `Reason: ${reason}`
         : `Ref #${ref} — ${permit.projectName}`,
@@ -104,12 +108,12 @@ export const notificationsService = {
     // Email to applicant
     await sendEmail({
       to: applicant.email,
-      subject: `Application ${permit.status} — Ref #${ref}`,
+      subject: `Application update: ${statusLabel} — Ref #${ref}`,
       template: PermitStatusUpdateEmail({
         fullName: applicant.fullName,
         projectName: permit.projectName,
         referenceNumber: ref,
-        newStatus: permit.status,
+        newStatus: statusLabel,
         reason,
         portalUrl,
       }),

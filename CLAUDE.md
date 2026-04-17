@@ -66,7 +66,13 @@ When adding a new component or page, do not copy shadcn's default
 11. **Internal notes are never visible to applicants.** `application_notes` is a separate table from `permit_comments`. Never query notes in any applicant-facing context. Enforced at service AND repository layer.
 12. **`external_user` cannot access the applicant comment thread.** Block in `comments.service.ts` — not just in the UI.
 13. **Applicants are never in `permit_assignments`.** The assignment table is for internal users only. Check role before inserting.
-14. **`permit_officer` cannot approve or reject.** Only `permit_admin`, `admin`, and `super_admin` can. Enforce in `permits.service.ts`.
+14. **Status change permissions are strictly enforced in `permits.service.ts`:**
+    - `permit_officer` → can move to `in_review`, `in_progress`, `incomplete` only
+    - `permit_admin`, `admin`, `super_admin` → can make all transitions
+    - `external_user` → cannot change any status
+    - `applicant` → cannot change status (resubmit handled separately via incomplete→submitted)
+    Never check roles inline in components — always call `permits.service.ts`.
+    permit_status is TEXT not pgEnum — validated by Zod, not the database.
 15. **Soft deletes on permit_comments and application_notes.** Never hard DELETE these rows. Always set `deleted_at = NOW()`. Only `admin` and `super_admin` can view and restore deleted items. Enforced at service layer.
 
 ---
@@ -116,16 +122,45 @@ Key distinctions:
 
 ## Status glossary
 
-| Status | Meaning |
-|---|---|
-| `draft` | Saved, not submitted |
-| `submitted` | Submitted by applicant, awaiting review |
-| `under_review` | Claimed by a reviewer |
-| `approved` | All workflow steps passed |
-| `returned` | Sent back to applicant for revision — applicant can edit and resubmit |
-| `rejected` | Terminal. Super admin only. Application permanently closed. |
+> permit_status is stored as plain TEXT — not a pgEnum.
+> Same reason as roles — statuses evolve and text requires no migration to change.
+> Validated at application layer via Zod only.
 
-`returned` ≠ `rejected`. Returned is fixable. Rejected is final.
+| Status | DB value | Meaning |
+|---|---|---|
+| `draft` | `draft` | Saved, not submitted |
+| `submitted` | `submitted` | Submitted by applicant, awaiting first review |
+| `in_review` | `in_review` | Officer actively reviewing |
+| `in_progress` | `in_progress` | Active — work is underway |
+| `incomplete` | `incomplete` | Replaces 'returned' — applicant edits and resubmits |
+| `approved` | `approved` | Approved — terminal |
+| `rejected` | `rejected` | Permanently closed — terminal |
+
+`incomplete` ≠ `rejected`. Incomplete is fixable. Rejected is final.
+
+### Status transition rules
+
+| From | To | Who can trigger |
+|---|---|---|
+| `submitted` | `in_review` | permit_officer, permit_admin, admin, super_admin |
+| `submitted` | `incomplete` | permit_officer, permit_admin, admin, super_admin |
+| `submitted` | `approved` | permit_admin, admin, super_admin |
+| `submitted` | `rejected` | permit_admin, admin, super_admin |
+| `in_review` | `in_progress` | permit_officer, permit_admin, admin, super_admin |
+| `in_review` | `incomplete` | permit_officer, permit_admin, admin, super_admin |
+| `in_review` | `approved` | permit_admin, admin, super_admin |
+| `in_review` | `rejected` | permit_admin, admin, super_admin |
+| `in_progress` | `incomplete` | permit_officer, permit_admin, admin, super_admin |
+| `in_progress` | `approved` | permit_admin, admin, super_admin |
+| `in_progress` | `rejected` | permit_admin, admin, super_admin |
+| `incomplete` | `submitted` | applicant resubmit only |
+| `approved` | — | terminal, no further transitions |
+| `rejected` | — | terminal, no further transitions |
+| `draft` | `submitted` | applicant submit only |
+
+`external_user` cannot trigger any status transition.
+Every transition writes a row to `permit_status_history`.
+Every transition notifies the applicant via email and portal notification.
 
 ---
 

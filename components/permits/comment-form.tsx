@@ -29,7 +29,12 @@ type Props = {
   onAdd?: (comment: Comment) => void;
 };
 
-const APPLICANT_STATUSES = ["submitted", "under_review", "returned"];
+const APPLICANT_STATUSES = [
+  "submitted",
+  "in_review",
+  "in_progress",
+  "incomplete",
+];
 const MAX_LENGTH = 2000;
 const MIN_LENGTH = 3;
 

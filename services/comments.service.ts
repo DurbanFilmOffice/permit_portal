@@ -25,7 +25,12 @@ export const commentsService = {
     const permit = await permitsRepository.findById(permitId);
     if (!permit) throw new Error("Application not found");
 
-    const applicantStatuses = ["submitted", "under_review", "returned"];
+    const applicantStatuses = [
+      "submitted",
+      "in_review",
+      "in_progress",
+      "incomplete",
+    ];
     if (
       authorRole === "applicant" &&
       !applicantStatuses.includes(permit.status)

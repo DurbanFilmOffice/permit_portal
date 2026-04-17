@@ -2,6 +2,7 @@ import { auth } from "@/lib/auth";
 import { redirect, notFound } from "next/navigation";
 import { permitsService } from "@/services/permits.service";
 import PermitForm from "@/components/permits/permit-form";
+import { APPLICANT_EDITABLE_STATUSES } from "@/lib/validations/permit-status";
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
 
 type Genre = PermitFormValues["formData"]["genre"];
@@ -33,8 +34,7 @@ export default async function EditPermitPage({
   if (permit.userId !== session.user.id) notFound();
 
   // Redirect away if status does not allow editing
-  const editableStatuses = ["draft", "submitted", "returned"];
-  if (!editableStatuses.includes(permit.status)) {
+  if (!APPLICANT_EDITABLE_STATUSES.includes(permit.status as never)) {
     redirect(`/applications/${id}`);
   }
 
@@ -129,7 +129,7 @@ export default async function EditPermitPage({
         mode="edit"
         permitId={permit.id}
         initialData={initialData}
-        isReturned={permit.status === "returned"}
+        isReturned={permit.status === "incomplete"}
       />
     </div>
   );

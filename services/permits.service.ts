@@ -1,11 +1,16 @@
 import { permitsRepository } from "@/repositories/permits.repository";
-import { isInternalRole, canApproveReject } from "@/lib/validations/roles";
+import { isInternalRole } from "@/lib/validations/roles";
 import type { Role } from "@/lib/validations/roles";
 import { permitDocumentsRepository } from "@/repositories/permit-documents.repository";
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
 import { permitStatusHistoryRepository } from "@/repositories/permit-status-history.repository";
 import { assignmentsService } from "@/services/assignments.service";
 import { notificationsService } from "@/services/notifications.service";
+import {
+  VALID_TRANSITIONS,
+  CAN_FINALISE_ROLES,
+  APPLICANT_EDITABLE_STATUSES,
+} from "@/lib/validations/permit-status";
 
 export const permitsService = {
   async getUserPermits(userId: string) {
@@ -22,70 +27,60 @@ export const permitsService = {
     return permit;
   },
 
-  async approvePermit(
+  async changeStatus(
     permitId: string,
-    officerId: string,
-    officerRole: Role,
+    newStatus: string,
+    requestingUserId: string,
+    requestingRole: Role,
     reason?: string,
   ) {
-    if (!canApproveReject(officerRole)) {
-      throw new Error("You do not have permission to approve applications");
+    // Block external_user and applicant
+    if (["external_user", "applicant"].includes(requestingRole)) {
+      throw new Error("You cannot change application status");
     }
 
     const permit = await permitsRepository.findById(permitId);
     if (!permit) throw new Error("Application not found");
 
-    if (["approved", "rejected"].includes(permit.status)) {
-      throw new Error("This application is already closed");
+    // Validate transition
+    const allowed = VALID_TRANSITIONS[permit.status] ?? [];
+    if (!allowed.includes(newStatus)) {
+      throw new Error(
+        `Cannot transition from ${permit.status} to ${newStatus}`,
+      );
     }
 
+    // Validate role for finalising transitions
+    const finalisingStatuses = ["approved", "rejected"];
+    if (
+      finalisingStatuses.includes(newStatus) &&
+      !CAN_FINALISE_ROLES.includes(
+        requestingRole as (typeof CAN_FINALISE_ROLES)[number],
+      )
+    ) {
+      throw new Error(
+        "You do not have permission to approve or reject applications",
+      );
+    }
+
+    // Update permit status
     const updated = await permitsRepository.update(permitId, {
-      status: "approved",
+      status: newStatus,
     });
 
+    // Write status history
     await permitStatusHistoryRepository.create({
       permitId,
-      changedBy: officerId,
+      changedBy: requestingUserId,
       oldStatus: permit.status,
-      newStatus: "approved",
+      newStatus,
       comment: reason ?? null,
     });
 
-    await notificationsService.onStatusChanged(updated, reason);
-
-    return updated;
-  },
-
-  async rejectPermit(
-    permitId: string,
-    officerId: string,
-    officerRole: Role,
-    reason?: string,
-  ) {
-    if (!canApproveReject(officerRole)) {
-      throw new Error("You do not have permission to reject applications");
-    }
-
-    const permit = await permitsRepository.findById(permitId);
-    if (!permit) throw new Error("Application not found");
-
-    if (["approved", "rejected"].includes(permit.status)) {
-      throw new Error("This application is already closed");
-    }
-
-    const updated = await permitsRepository.update(permitId, {
-      status: "rejected",
-    });
-
-    await permitStatusHistoryRepository.create({
-      permitId,
-      changedBy: officerId,
-      oldStatus: permit.status,
-      newStatus: "rejected",
-      comment: reason ?? null,
-    });
-
-    await notificationsService.onStatusChanged(updated, reason);
+    // Notify applicant — fire and forget
+    notificationsService
+      .onStatusChanged(updated, reason)
+      .catch((err) => console.error("Status change notification failed:", err));
 
     return updated;
   },
@@ -115,7 +110,7 @@ export const permitsService = {
     const permit = await permitsRepository.findById(permitId);
     if (!permit) throw new Error("Application not found");
     if (permit.userId !== userId) throw new Error("Forbidden");
-    if (!["draft", "returned"].includes(permit.status)) {
+    if (!["draft", "incomplete"].includes(permit.status)) {
       throw new Error("This application cannot be submitted");
     }
 
@@ -158,8 +153,7 @@ export const permitsService = {
     if (!permit) throw new Error("Application not found");
     if (permit.userId !== userId) throw new Error("Forbidden");
 
-    const editableStatuses = ["draft", "submitted", "returned"];
-    if (!editableStatuses.includes(permit.status)) {
+    if (!APPLICANT_EDITABLE_STATUSES.includes(permit.status as never)) {
       throw new Error("This application can no longer be edited");
     }
 

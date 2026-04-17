@@ -29,6 +29,13 @@
       "when": 1776368205275,
       "tag": "0003_productive_owl",
       "breakpoints": true
+    },
+    {
+      "idx": 4,
+      "version": "7",
+      "when": 1776446770779,
+      "tag": "0004_goofy_sue_storm",
+      "breakpoints": true
     }
   ]
 }
