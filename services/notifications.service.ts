@@ -3,6 +3,7 @@ import "server-only";
 import { portalNotificationsRepository } from "@/repositories/portal-notifications.repository";
 import { usersRepository } from "@/repositories/users.repository";
 import { assignmentsRepository } from "@/repositories/assignments.repository";
+import { notificationRecipientsRepository } from "@/repositories/notification-recipients.repository";
 import { sendEmail } from "@/lib/email";
 import { PermitSubmittedEmail } from "@/emails/permit-submitted";
 import { PermitStatusUpdateEmail } from "@/emails/permit-status-update";
@@ -36,6 +37,7 @@ export const notificationsService = {
         projectName: permit.projectName,
         referenceNumber: ref,
         portalUrl,
+        variant: "applicant",
       }),
     });
 
@@ -48,18 +50,19 @@ export const notificationsService = {
       permitId: permit.id,
     });
 
-    // 3. Email to all assigned internal users
-    const assigned = await assignmentsRepository.findByPermit(permit.id);
+    // 3. Alert email to all active notification recipients
+    const recipients = await notificationRecipientsRepository.findActive();
     await Promise.allSettled(
-      assigned.map((a) =>
+      recipients.map((r) =>
         sendEmail({
-          to: a.user.email,
+          to: r.email,
           subject: `New permit application — ${permit.projectName}`,
           template: PermitSubmittedEmail({
-            fullName: a.user.fullName,
+            fullName: r.name ?? "Permit Officer",
             projectName: permit.projectName,
             referenceNumber: ref,
             portalUrl: `${APP_URL}/admin/applications/${permit.id}`,
+            variant: "officer",
           }),
         }),
       ),
@@ -82,10 +85,7 @@ export const notificationsService = {
     const ref = permit.id.slice(0, 8).toUpperCase();
     const portalUrl = `${APP_URL}/applications/${permit.id}`;
 
-    const typeMap: Record<
-      string,
-      "permit_approved" | "permit_rejected" | "status_changed"
-    > = {
+    const typeMap: Record<string, "permit_approved" | "permit_rejected" | "status_changed"> = {
       approved: "permit_approved",
       rejected: "permit_rejected",
     };

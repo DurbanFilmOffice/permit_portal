@@ -24,6 +24,10 @@ export const usersService = {
     return user;
   },
 
+  async getAll() {
+    return usersRepository.findAll();
+  },
+
   async changeRole(
     targetUserId: string,
     newRole: Role,
