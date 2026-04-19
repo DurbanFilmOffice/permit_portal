@@ -18,6 +18,7 @@ interface PermitSubmittedEmailProps {
   projectName: string;
   referenceNumber: string;
   portalUrl: string;
+  variant?: "applicant" | "officer";
 }
 
 export function PermitSubmittedEmail({
@@ -25,35 +26,62 @@ export function PermitSubmittedEmail({
   projectName,
   referenceNumber,
   portalUrl,
+  variant = "applicant",
 }: PermitSubmittedEmailProps) {
+  const isOfficer = variant === "officer";
+
   return (
     <Html>
       <Head />
-      <Preview>Permit application received — Ref #{referenceNumber}</Preview>
+      <Preview>
+        {isOfficer
+          ? `New permit application submitted — ${projectName}`
+          : `Permit application received — Ref #${referenceNumber}`}
+      </Preview>
       <Body style={main}>
         <Container style={container}>
-          <Heading style={heading}>Application Received</Heading>
+          <Heading style={heading}>
+            {isOfficer ? "New Permit Application" : "Application Received"}
+          </Heading>
 
           <Text style={paragraph}>
-            Hi {fullName}, your permit application for{" "}
-            <strong>{projectName}</strong> has been successfully submitted.
+            {isOfficer ? (
+              <>
+                Hi {fullName}, a new permit application has been submitted and
+                requires your attention.
+              </>
+            ) : (
+              <>
+                Hi {fullName}, your permit application for{" "}
+                <strong>{projectName}</strong> has been successfully submitted.
+              </>
+            )}
           </Text>
 
-          <Section style={referenceBox}>
-            <Text style={referenceLabel}>Your reference number</Text>
-            <Text style={referenceNumber_}>Ref #{referenceNumber}</Text>
+          <Section style={detailsBox}>
+            <Text style={detailsLabel}>
+              {isOfficer ? "Application details" : "Your reference number"}
+            </Text>
+            {isOfficer && (
+              <Text style={detailsValue}>
+                <strong>Project:</strong> {projectName}
+              </Text>
+            )}
+            <Text style={referenceValue}>Ref #{referenceNumber}</Text>
           </Section>
 
           <Section style={buttonContainer}>
             <Button style={button} href={portalUrl}>
-              View your application
+              {isOfficer ? "Review application" : "View your application"}
             </Button>
           </Section>
 
           <Hr style={divider} />
 
           <Text style={footer}>
-            You will be notified when your application status is updated.
+            {isOfficer
+              ? "Log in to the portal to review, assign, or update the status of this application."
+              : "You will be notified when your application status is updated."}
           </Text>
         </Container>
       </Body>
@@ -93,7 +121,7 @@ const paragraph: React.CSSProperties = {
   marginBottom: "24px",
 };
 
-const referenceBox: React.CSSProperties = {
+const detailsBox: React.CSSProperties = {
   backgroundColor: "#f0f9ff",
   border: "1px solid #bae6fd",
   borderRadius: "6px",
@@ -101,7 +129,7 @@ const referenceBox: React.CSSProperties = {
   marginBottom: "28px",
 };
 
-const referenceLabel: React.CSSProperties = {
+const detailsLabel: React.CSSProperties = {
   fontSize: "12px",
   fontWeight: "500",
   color: "#0369a1",
@@ -110,8 +138,13 @@ const referenceLabel: React.CSSProperties = {
   margin: "0 0 4px 0",
 };
 
-// renamed to avoid collision with the prop
-const referenceNumber_: React.CSSProperties = {
+const detailsValue: React.CSSProperties = {
+  fontSize: "16px",
+  color: "#0c4a6e",
+  margin: "0 0 4px 0",
+};
+
+const referenceValue: React.CSSProperties = {
   fontSize: "20px",
   fontWeight: "700",
   fontFamily: "monospace",
