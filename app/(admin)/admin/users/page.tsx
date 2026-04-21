@@ -1,15 +1,21 @@
 import { auth } from "@/lib/auth";
 import { redirect } from "next/navigation";
 import { usersService } from "@/services/users.service";
+import { getPaginationParams, getPaginationMeta } from "@/lib/utils/pagination";
 import type { Role } from "@/lib/validations/roles";
-import UserRoleSelect from "@/components/users/user-role-select";
 import UserActionsMenu from "@/components/users/user-actions-menu";
+import TableToolbar from "@/components/shared/data-table/table-toolbar";
+import SearchInput from "@/components/shared/data-table/search-input";
+import FilterSelect from "@/components/shared/data-table/filter-select";
+import PageSizeSelect from "@/components/shared/data-table/page-size-select";
+import PaginationControls from "@/components/shared/data-table/pagination-controls";
 import { Badge } from "@/components/ui/badge";
-import { Button } from "@/components/ui/button";
-import Link from "next/link";
-import { Users } from "lucide-react";
 
-export default async function UsersPage() {
+export default async function UsersPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>;
+}) {
   const session = await auth();
   if (!session?.user) redirect("/login");
 
@@ -17,24 +23,47 @@ export default async function UsersPage() {
     redirect("/admin/dashboard");
   }
 
-  const users = await usersService.getApplicants();
+  const params = await searchParams;
+  const { page, pageSize, offset } = getPaginationParams(params);
+
+  const filters = {
+    search: params.search,
+    status: params.status,
+    role: "applicant", // always scoped to applicants only
+  };
+
+  const { rows, total } = await usersService.getFilteredUsers(filters, {
+    limit: pageSize,
+    offset,
+  });
+
+  const meta = getPaginationMeta(total, page, pageSize);
+
+  const statusOptions = [
+    { value: "active", label: "Active" },
+    { value: "inactive", label: "Inactive" },
+  ];
 
   return (
     <div className="space-y-6">
-      <div className="flex items-center justify-between">
+      <div className="flex items-center justify-between flex-wrap gap-4">
         <div>
           <h1 className="text-2xl font-semibold tracking-tight">Applicants</h1>
           <p className="text-base text-muted-foreground mt-1">
             Users who have registered to submit permit applications.
           </p>
         </div>
-        {/* <Button variant="outline" asChild>
-          <Link href="/admin/users/">
-            <Users className="h-4 w-4 mr-2" />
-            <span className="text-base">Applicant</span>
-          </Link>
-        </Button> */}
+        <PageSizeSelect />
       </div>
+
+      <TableToolbar>
+        <SearchInput placeholder="Search by name or email..." />
+        <FilterSelect
+          paramName="status"
+          placeholder="All statuses"
+          options={statusOptions}
+        />
+      </TableToolbar>
 
       <div className="rounded-lg border">
         <table className="w-full">
@@ -47,8 +76,11 @@ export default async function UsersPage() {
             </tr>
           </thead>
           <tbody>
-            {users.map((user) => (
-              <tr key={user.id} className="border-b last:border-0">
+            {rows.map((user) => (
+              <tr
+                key={user.id}
+                className="border-b last:border-0 hover:bg-muted/30"
+              >
                 {/* User column */}
                 <td className="p-4">
                   <div className="flex items-center gap-3">
@@ -103,7 +135,7 @@ export default async function UsersPage() {
                   <UserActionsMenu
                     userId={user.id}
                     fullName={user.fullName}
-                    isActive={user.isActive}
+                    isActive={user.isActive ?? true}
                     currentUserId={session.user.id}
                     requestingRole={session.user.role as Role}
                   />
@@ -113,14 +145,16 @@ export default async function UsersPage() {
           </tbody>
         </table>
 
-        {users.length === 0 && (
+        {rows.length === 0 && (
           <div className="p-12 text-center">
             <p className="text-base text-muted-foreground">
-              No applicants found
+              No applicants found matching your filters
             </p>
           </div>
         )}
       </div>
+
+      <PaginationControls meta={meta} />
     </div>
   );
 }
