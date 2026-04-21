@@ -155,4 +155,19 @@ export const usersService = {
       isActive: true,
     });
   },
+
+  async getFilteredUsers(
+    filters: {
+      search?: string;
+      role?: string;
+      status?: string;
+    },
+    pagination: { limit: number; offset: number },
+  ) {
+    const [rows, total] = await Promise.all([
+      usersRepository.findWithFilters(filters, pagination),
+      usersRepository.countWithFilters(filters),
+    ]);
+    return { rows, total };
+  },
 };
