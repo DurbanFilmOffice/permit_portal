@@ -110,6 +110,121 @@ export type NewPermit = typeof permits.$inferInsert
 
 ---
 
+## Server-side pagination pattern
+
+All tables use this consistent pattern. Build shared components once,
+reuse across all four tables.
+
+### Repository layer
+```ts
+// Every paginated repository has these two methods
+findWithFilters: (
+  filters: {
+    search?: string
+    status?: string
+    role?: string
+    from?: Date
+    to?: Date
+    // add table-specific filters here
+  },
+  pagination: { limit: number; offset: number }
+) => Promise<Row[]>
+
+countWithFilters: (
+  filters: same as above
+) => Promise<number>
+```
+
+### Utility functions
+```ts
+// src/lib/utils/pagination.ts
+export function getPaginationParams(searchParams: {
+  page?: string
+  pageSize?: string
+}) {
+  const page = Math.max(1, parseInt(searchParams.page ?? '1'))
+  const pageSize = [10, 25, 50].includes(
+    parseInt(searchParams.pageSize ?? '10')
+  )
+    ? parseInt(searchParams.pageSize ?? '10')
+    : 10
+  const offset = (page - 1) * pageSize
+  return { page, pageSize, offset }
+}
+
+export function getPaginationMeta(
+  total: number,
+  page: number,
+  pageSize: number
+) {
+  const totalPages = Math.ceil(total / pageSize)
+  return {
+    total,
+    totalPages,
+    hasNext: page < totalPages,
+    hasPrev: page > 1,
+    from: Math.min((page - 1) * pageSize + 1, total),
+    to: Math.min(page * pageSize, total),
+  }
+}
+```
+
+### Page pattern (Server Component)
+```ts
+// Reads Nuqs search params, calls service, passes to table
+export default async function AdminApplicationsPage({
+  searchParams,
+}: {
+  searchParams: Promise<Record<string, string>>
+}) {
+  const params = await searchParams
+  const { page, pageSize, offset } = getPaginationParams(params)
+
+  const filters = {
+    search: params.search,
+    status: params.status,
+    // ...other filters
+  }
+
+  const [rows, total] = await Promise.all([
+    permitsService.getWithFilters(filters, { limit: pageSize, offset }),
+    permitsService.countWithFilters(filters),
+  ])
+
+  const meta = getPaginationMeta(total, page, pageSize)
+
+  return (
+    <>
+      <TableToolbar filters={filters} />
+      <DataTable rows={rows} />
+      <PaginationControls meta={meta} />
+    </>
+  )
+}
+```
+
+### Nuqs usage in filter components
+```ts
+// Filter components use Nuqs to update URL
+'use client'
+import { useQueryState } from 'nuqs'
+
+export function SearchInput() {
+  const [search, setSearch] = useQueryState('search', {
+    defaultValue: '',
+    shallow: false,  // triggers server re-render
+  })
+
+  return (
+    <Input
+      value={search}
+      onChange={e => setSearch(e.target.value || null)}
+      placeholder="Search..."
+    />
+  )
+}
+```
+
 ## Soft delete pattern
 
 permit_comments and application_notes use soft deletes.

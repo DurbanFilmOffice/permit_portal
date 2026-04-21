@@ -183,4 +183,28 @@ export const permitsService = {
     const ids = await assignmentsService.getAssignedPermitIds(userId);
     return permitsRepository.findByIds(ids);
   },
+
+  async getFilteredPermits(
+    filters: {
+      search?: string;
+      status?: string;
+      tab?: string;
+      from?: string;
+      to?: string;
+    },
+    pagination: { limit: number; offset: number },
+    currentUserId: string,
+  ) {
+    const enrichedFilters = {
+      ...filters,
+      assignedUserId: filters.tab === "mine" ? currentUserId : undefined,
+    };
+
+    const [rows, total] = await Promise.all([
+      permitsRepository.findWithFilters(enrichedFilters, pagination),
+      permitsRepository.countWithFilters(enrichedFilters),
+    ]);
+
+    return { rows, total };
+  },
 };
