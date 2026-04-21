@@ -22,7 +22,6 @@ import {
   Card,
   CardContent,
   CardDescription,
-  CardFooter,
   CardHeader,
   CardTitle,
 } from "@/components/ui/card";
@@ -271,11 +270,17 @@ export default function AddRecipientForm({
 
       <CardContent>
         <Tabs defaultValue="portal">
-          <TabsList className="w-full mb-4">
-            <TabsTrigger value="portal" className="flex-1 text-base">
+          <TabsList className="w-fit gap-1 p-1 mb-4">
+            <TabsTrigger
+              value="portal"
+              className="text-base px-6 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
               Portal user
             </TabsTrigger>
-            <TabsTrigger value="external" className="flex-1 text-base">
+            <TabsTrigger
+              value="external"
+              className="text-base px-6 data-[state=active]:bg-background data-[state=active]:text-foreground data-[state=active]:shadow-sm"
+            >
               External email
             </TabsTrigger>
           </TabsList>

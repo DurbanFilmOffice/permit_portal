@@ -63,4 +63,18 @@ export const notificationRecipientsService = {
   async update(id: string, data: { name?: string; role?: string }) {
     return notificationRecipientsRepository.update(id, data);
   },
+
+  async getFiltered(
+    filters: {
+      search?: string;
+      status?: string;
+    },
+    pagination: { limit: number; offset: number },
+  ) {
+    const [rows, total] = await Promise.all([
+      notificationRecipientsRepository.findWithFilters(filters, pagination),
+      notificationRecipientsRepository.countWithFilters(filters),
+    ]);
+    return { rows, total };
+  },
 };
