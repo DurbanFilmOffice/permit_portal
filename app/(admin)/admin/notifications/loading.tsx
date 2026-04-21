@@ -14,28 +14,54 @@ export default function NotificationsLoading() {
 
       <div className="grid gap-8 lg:grid-cols-3">
         {/* Add form skeleton */}
-        <div className="lg:col-span-1 space-y-4">
-          <Skeleton className="h-64 w-full rounded-lg" />
+        <div className="lg:col-span-1">
+          <Skeleton className="h-72 w-full rounded-lg" />
         </div>
 
         {/* Table skeleton */}
         <div className="lg:col-span-2 rounded-lg border">
-          <div className="p-4 border-b space-y-2">
-            <Skeleton className="h-6 w-48" />
-            <Skeleton className="h-4 w-32" />
+          {/* Table header with toolbar */}
+          <div className="p-4 border-b space-y-4">
+            <div className="flex items-center justify-between">
+              <div className="space-y-2">
+                <Skeleton className="h-6 w-48" />
+                <Skeleton className="h-4 w-32" />
+              </div>
+              <Skeleton className="h-9 w-32" />
+            </div>
+            <div className="flex gap-3">
+              <Skeleton className="h-9 w-56" />
+              <Skeleton className="h-9 w-36" />
+            </div>
           </div>
+
+          {/* Data rows */}
           <div className="divide-y">
-            {Array.from({ length: 4 }).map((_, i) => (
+            {Array.from({ length: 10 }).map((_, i) => (
               <div key={i} className="flex items-center gap-4 p-4">
-                <Skeleton className="h-9 w-9 rounded-full" />
-                <div className="flex-1 space-y-2">
+                <Skeleton className="h-9 w-9 rounded-full flex-shrink-0" />
+                <div className="flex-1 space-y-1.5">
                   <Skeleton className="h-4 w-40" />
                   <Skeleton className="h-3 w-56" />
                 </div>
-                <Skeleton className="h-6 w-16" />
-                <Skeleton className="h-8 w-8" />
+                <Skeleton className="h-6 w-16 rounded-full shrink-0" />
+                <Skeleton className="h-4 w-24 shrink-0" />
+                <Skeleton className="h-6 w-10 shrink-0" />
+                <Skeleton className="h-8 w-8 rounded shrink-0" />
               </div>
             ))}
+          </div>
+
+          {/* Pagination */}
+          <div className="p-4 border-t">
+            <div className="flex items-center justify-between">
+              <Skeleton className="h-4 w-48" />
+              <div className="flex items-center gap-2">
+                <Skeleton className="h-9 w-20" />
+                <Skeleton className="h-4 w-32" />
+                <Skeleton className="h-9 w-20" />
+              </div>
+            </div>
           </div>
         </div>
       </div>
