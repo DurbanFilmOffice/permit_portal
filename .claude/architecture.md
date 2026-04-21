@@ -63,6 +63,7 @@ src/
 ├── components/
 │   ├── ui/                       # shadcn/ui components (owned — do not re-install over customisations)
 │   ├── shared/                   # layout: sidebar, header, dashboard-shell, theme-provider
+│   │   └── data-table/           # reusable table components: search, filters, pagination
 │   ├── permits/                  # applications-table, comment-thread, comment-form,
 │   │                               # application-status-actions (replaces approval-actions)
 │   │   └── permit-form/          # multi-step form (build when form fields are defined)
@@ -359,6 +360,99 @@ decision: enum(approved, returned)
 comment (optional reason), decided_at
 metadata: jsonb (future: IP, device, duration)
 ```
+
+## Server-side filtering, pagination and search
+
+All tables in the system use server-side filtering, pagination and search.
+Never use client-side filtering — the database does the work.
+
+### Page sizes
+Available: 10, 25, 50 — default: 10
+
+### URL state management
+Nuqs manages all filter/pagination state as URL search params.
+Filters are bookmarkable, shareable, and survive page refresh.
+Back button works correctly.
+
+### Tables that use this pattern
+
+| Table | Route | Filters | Search |
+|---|---|---|---|
+| All Applications | /admin/applications | status, permit type, genre, date range | project name, company, applicant name |
+| Users | /admin/users | role, active/inactive | full name, email |
+| Notification recipients | /admin/notifications | active/inactive | name, email |
+| My Applications | /applications | status | project name |
+
+### Shared components (build once, reuse everywhere)
+```
+src/components/shared/data-table/
+  search-input.tsx        ← debounced search, updates URL via Nuqs
+  filter-select.tsx       ← dropdown filter, updates URL
+  date-range-filter.tsx   ← from/to date pickers
+  pagination-controls.tsx ← prev/next/page numbers
+  page-size-select.tsx    ← 10/25/50 selector
+  table-toolbar.tsx       ← wraps search + filters
+  results-count.tsx       ← "Showing 1-10 of 47 results"
+```
+
+### Shared utilities
+```
+src/lib/utils/pagination.ts
+  getPaginationParams(searchParams) → { page, pageSize, offset }
+  getPaginationMeta(total, page, pageSize) → { totalPages, hasNext, hasPrev }
+```
+
+### Repository pattern
+Every table's repository gets two methods:
+  findWithFilters(filters, { limit, offset }) → rows
+  countWithFilters(filters) → total count
+
+### URL structure examples
+```
+/admin/applications?page=1&pageSize=10&status=submitted&search=marina&tab=all
+/admin/users?page=1&pageSize=10&role=permit_officer&status=active&search=john
+/admin/notifications?page=1&pageSize=10&status=active&search=smith
+/applications?page=1&pageSize=10&status=in_review&search=documentary
+```
+
+## PDF export
+
+### What gets exported
+A structured PDF of the permit application including:
+  - Header: portal branding, reference number, current status
+  - Project details: company, title, dates, description
+  - Location information
+  - Equipment list (bullet points)
+  - Crew and SFX details (if filled)
+  - Traffic control details (if applicable)
+  - Drone filming details (if applicable)
+  - Status history timeline
+  - Submission date and applicant information
+  - Footer: reference number and export date
+
+### Tool
+@react-pdf/renderer — React components that render to PDF server-side.
+Install: bun add @react-pdf/renderer
+
+### File locations
+  src/pdf/permit-application.tsx  ← React PDF template
+  src/app/api/permits/[id]/export/route.ts  ← streams PDF to browser
+
+### Export permissions
+  applicant          → own submitted applications only (not draft)
+  external_user      → assigned applications only (not draft)
+  permit_officer     → any application (not draft)
+  permit_admin       → any application (not draft)
+  admin              → any application (not draft)
+  super_admin        → any application (not draft)
+
+Draft applications cannot be exported.
+
+### Export button location
+  - Applicant permit detail page: /applications/[id]
+  - Admin permit detail page: /admin/applications/[id]
+  Shown as "Export PDF" button in the permit detail header.
+  Hidden when status is 'draft'.
 
 ### Fire-and-forget notification pattern
 Notifications must never block core actions. Use this pattern
