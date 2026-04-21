@@ -207,4 +207,19 @@ export const permitsService = {
 
     return { rows, total };
   },
+
+  async getFilteredUserPermits(
+    userId: string,
+    filters: {
+      search?: string;
+      status?: string;
+    },
+    pagination: { limit: number; offset: number },
+  ) {
+    const [rows, total] = await Promise.all([
+      permitsRepository.findByUserWithFilters(userId, filters, pagination),
+      permitsRepository.countByUserWithFilters(userId, filters),
+    ]);
+    return { rows, total };
+  },
 };

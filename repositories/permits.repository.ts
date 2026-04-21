@@ -175,7 +175,7 @@ export const permitsRepository = {
       .offset(pagination.offset);
   },
 
-  // Count for pagination meta
+  // Count for pagination meta (admin)
   countWithFilters: async (filters: {
     search?: string;
     status?: string;
@@ -203,6 +203,63 @@ export const permitsRepository = {
     }
 
     return baseQuery.where(conditions).then((r) => Number(r[0]?.count ?? 0));
+  },
+
+  // Paginated + filtered query scoped to a single applicant
+  findByUserWithFilters: async (
+    userId: string,
+    filters: {
+      search?: string;
+      status?: string;
+    },
+    pagination: { limit: number; offset: number },
+  ) => {
+    const conditions = [eq(permits.userId, userId)];
+
+    if (filters.status) {
+      conditions.push(
+        eq(permits.status, filters.status as typeof permits.status._.data),
+      );
+    }
+
+    if (filters.search) {
+      conditions.push(ilike(permits.projectName, `%${filters.search}%`));
+    }
+
+    return db
+      .select()
+      .from(permits)
+      .where(and(...conditions))
+      .orderBy(desc(permits.createdAt))
+      .limit(pagination.limit)
+      .offset(pagination.offset);
+  },
+
+  // Count scoped to a single applicant
+  countByUserWithFilters: async (
+    userId: string,
+    filters: {
+      search?: string;
+      status?: string;
+    },
+  ) => {
+    const conditions = [eq(permits.userId, userId)];
+
+    if (filters.status) {
+      conditions.push(
+        eq(permits.status, filters.status as typeof permits.status._.data),
+      );
+    }
+
+    if (filters.search) {
+      conditions.push(ilike(permits.projectName, `%${filters.search}%`));
+    }
+
+    return db
+      .select({ count: count() })
+      .from(permits)
+      .where(and(...conditions))
+      .then((r) => Number(r[0]?.count ?? 0));
   },
 };
 
