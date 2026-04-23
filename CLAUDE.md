@@ -181,7 +181,8 @@ Note: proxy.ts (not middleware.ts) enforces these rules. Next.js 16 renamed midd
 
 - Workflow engine (`workflow.service.ts` exists as stubs — see `.claude/architecture.md`)
 - PDF export (planned — use @react-pdf/renderer, see `.claude/architecture.md` for full spec)
-- Permit form is fully built — multi-step wizard, plain Textarea for rich text fields (Tiptap removed)
+- Permit form is being rebuilt — new 7-step structure with file uploads. See architecture.md for full field definitions.
+  Do not reference old field names (companyName, genre, locationName etc.) — use new names from architecture.md.
 - Document upload (requirements changing — individual upload per document type coming later.
   Do not build any file upload UI or storage logic until explicitly instructed.)
 - Auth.js proxy is fully configured (proxy.ts handles RBAC)

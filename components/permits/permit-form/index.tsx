@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import { useForm, type Resolver } from "react-hook-form";
 import { zodResolver } from "@hookform/resolvers/zod";
 import { useRouter } from "next/navigation";
@@ -9,6 +9,7 @@ import { CheckCircle2, Circle } from "lucide-react";
 import {
   permitFormSchema,
   type PermitFormValues,
+  DOCUMENT_TYPES,
 } from "@/lib/validations/permit-form.schema";
 import {
   createDraftAction,
@@ -16,79 +17,28 @@ import {
 } from "@/app/(applicant)/applications/new/actions";
 import { cn } from "@/lib/utils";
 import { Form } from "@/components/ui/form";
+import type { PermitDocument } from "@/db/schema/permit-documents";
 
 import { PermitFormNavigation } from "./permit-form-navigation";
-import { Step01ProjectDetails } from "./steps/step-01-project-details";
-import { Step02Location } from "./steps/step-02-location";
-import { Step03Equipment } from "./steps/step-03-equipment";
-import { Step04CrewSfx } from "./steps/step-04-crew-sfx";
-import { Step05TrafficDrone } from "./steps/step-05-traffic-drone";
-import { Step06Drone } from "./steps/step-06-drone";
-import { Step07Documents } from "./steps/step-07-documents";
+import { Step01ProductionDetails } from "./steps/step-01-production-details";
+import { Step02LocationApplication } from "./steps/step-02-location-application";
+import { Step03TrafficAssistance } from "./steps/step-03-traffic-assistance";
+import { Step04SfxPyrotechnics } from "./steps/step-04-sfx-pyrotechnics";
+import { Step05AerialFilming } from "./steps/step-05-aerial-filming";
+import { Step06SpecialRequirements } from "./steps/step-06-special-requirements";
+import { Step07ProductionDocuments } from "./steps/step-07-production-documents";
 
-// ─── Step field map — used for per-step validation ───────────────────────────
+// ─── Step config ──────────────────────────────────────────────────────────────
 
-const STEP_FIELDS: Record<number, string[]> = {
-  1: [
-    "projectName",
-    "formData.companyName",
-    "formData.projectTitle",
-    "formData.startDate",
-    "formData.endDate",
-    "formData.descriptionOfScenes",
-    "formData.tags",
-  ],
-  2: [
-    "siteAddress",
-    "formData.locationName",
-    "formData.locationAddress",
-    "formData.applicantContactNumber",
-    "formData.startTime",
-    "formData.wrapTime",
-    "formData.genre",
-  ],
-  3: ["formData.equipment"],
-  4: [
-    "formData.numberOfCrew",
-    "formData.numberOfCars",
-    "formData.numberOfCast",
-    "formData.numberOfExtras",
-    "formData.requiresSfxPermit",
-    "formData.gunSupervisorName",
-    "formData.sfxGunSupervisorContact",
-    "formData.initiationDetails",
-    "formData.numberOfRounds",
-    "formData.numberOfResets",
-  ],
-  5: [
-    "formData.requiresTrafficControl",
-    "formData.roadIntersectionName",
-    "formData.dateTrafficControlRequired",
-    "formData.trafficControlStartDate",
-    "formData.trafficControlEndDate",
-    "formData.trafficStartTimeAndWrapTime",
-    "formData.involveDroneFilming",
-  ],
-  6: [
-    "formData.proposedActivityDetails",
-    "formData.droneOperatorHasLicense",
-    "formData.droneProposedActivityDetails",
-  ],
-  7: ["formData.showAfterCreated"],
-};
-
-// ─── Static step config ───────────────────────────────────────────────────────
-
-const BASE_STEPS = [
-  { id: 1, title: "Project Details" },
-  { id: 2, title: "Location & Information" },
-  { id: 3, title: "Equipment" },
-  { id: 4, title: "Crew & SFX" },
-  { id: 5, title: "Traffic Control" },
-  { id: 7, title: "Documents & Submit" },
+const STEPS = [
+  { id: 1, title: "Production Details", optional: false },
+  { id: 2, title: "Location Application", optional: false },
+  { id: 3, title: "Traffic Assistance", optional: true },
+  { id: 4, title: "SFX / Pyrotechnics", optional: true },
+  { id: 5, title: "Aerial Filming", optional: false },
+  { id: 6, title: "Special Requirements", optional: false },
+  { id: 7, title: "Production Documents", optional: false },
 ] as const;
-
-const DRONE_STEP = { id: 6, title: "Drone Filming" } as const;
 
 // ─── Props ────────────────────────────────────────────────────────────────────
 
@@ -97,6 +47,17 @@ interface PermitFormProps {
   permitId?: string;
   initialData?: PermitFormValues;
   isReturned?: boolean;
+  isIncomplete?: boolean;
+  isDraft?: boolean;
+  existingDocuments?: PermitDocument[];
+}
+
+function sanitiseFilename(name: string): string {
+  return name
+    .toLowerCase()
+    .replace(/[^a-z0-9.\-_]/g, "-")
+    .replace(/-+/g, "-")
+    .replace(/^-|-$/g, "");
 }
 
 // ─── Empty defaults (create mode) ────────────────────────────────────────────
@@ -104,41 +65,66 @@ interface PermitFormProps {
 const EMPTY_DEFAULTS: PermitFormValues = {
   projectName: "",
   siteAddress: "",
+  description: "",
   formData: {
-    companyName: "",
-    projectTitle: "",
+    // Step 1
+    productionCompany: "",
+    productionTitle: "",
     startDate: "",
     endDate: "",
-    descriptionOfScenes: "",
-    tags: "",
-    locationName: "",
-    locationAddress: "",
-    applicantContactNumber: "",
-    startTime: "",
+    synopsis: "",
+    productionType: undefined as never,
+    applicationTimeframe: undefined,
+    estimatedBudget: "",
+    producingEmail: "",
+    producingTelephone: "",
+    producingWebsite: "",
+    producingAddress: "",
+    producingCellphone: "",
+    contactFullName: "",
+    contactCellphone: "",
+    contactAltCellphone: "",
+    contactDesignation: "",
+    productionBackground: "",
+    accommodationBooked: undefined,
+    numberOfRoomsBooked: "",
+    // Step 2
+    filmingLocationName: "",
+    filmingLocationAddress: "",
+    onSetContactNumber: "",
+    callTime: "",
     wrapTime: "",
-    genre: undefined as never,
-    equipment: [],
-    numberOfCrew: undefined,
-    numberOfCars: undefined,
-    numberOfCast: "",
-    numberOfExtras: "",
-    requiresSfxPermit: undefined as never,
-    gunSupervisorName: "",
-    sfxGunSupervisorContact: "",
-    initiationDetails: "",
-    numberOfRounds: "",
-    numberOfResets: "",
-    requiresTrafficControl: undefined as never,
-    roadIntersectionName: "",
+    descriptionOfScenes: "",
+    crewCount: undefined,
+    castTalentCount: undefined,
+    backgroundCastCount: undefined,
+    localBackgroundCastTalent: "",
+    vehicleCars: undefined,
+    vehicleVans: undefined,
+    vehicleTrucks: undefined,
+    vehicleBuses: undefined,
+    roadPortionFilmed: undefined,
+    // Step 3
+    roadClosureType: undefined,
+    numberOfLanes: "",
+    estimatedParkingDuration: "",
+    numberOfPublicBaysRequired: undefined,
+    truckSizeTons: "",
     dateTrafficControlRequired: "",
     trafficControlStartDate: "",
     trafficControlEndDate: "",
-    trafficStartTimeAndWrapTime: "",
-    involveDroneFilming: undefined as never,
+    trafficStartAndWrapTime: "",
+    // Step 4
+    firingPointDischargeArea: "",
+    materialList: "",
+    emergencyPlan: "",
+    // Step 5
+    involvesAerialFilming: "no",
+    aerialFilmingLocation: "",
     proposedActivityDetails: "",
-    droneOperatorHasLicense: undefined,
     droneProposedActivityDetails: "",
-    showAfterCreated: true,
+    // Step 6
+    equipment: [],
   },
 };
 
@@ -149,23 +135,31 @@ export default function PermitForm({
   permitId: initialPermitId,
   initialData,
   isReturned = false,
+  isIncomplete = false,
+  isDraft = false,
+  existingDocuments = [],
 }: PermitFormProps) {
   const router = useRouter();
+
   const [currentStep, setCurrentStep] = useState(1);
   const [completedSteps, setCompletedSteps] = useState<number[]>([]);
   const [permitId, setPermitId] = useState<string | null>(
     initialPermitId ?? null,
   );
   const [isSubmitting, setIsSubmitting] = useState(false);
-  const [files, setFiles] = useState<File[]>([]);
   const [submitError, setSubmitError] = useState<string | null>(null);
+  const [files, setFiles] = useState<Record<string, File | null>>({});
 
-  // Merge initialData safely — guarantees no undefined on required string fields
+  const handleFileChange = (documentType: string, file: File | null) => {
+    setFiles((prev) => ({ ...prev, [documentType]: file }));
+  };
+
   const resolvedDefaults: PermitFormValues = initialData
     ? {
         ...initialData,
         siteAddress: initialData.siteAddress ?? "",
         projectName: initialData.projectName ?? "",
+        description: initialData.description ?? "",
         formData: {
           ...EMPTY_DEFAULTS.formData,
           ...initialData.formData,
@@ -180,50 +174,87 @@ export default function PermitForm({
     mode: "onTouched",
   });
 
-  // siteAddress has no visible input in the wizard — RHF drops unregistered
-  // fields from getValues(). Force-write it on mount in edit mode so it is
-  // present when the form is submitted.
-  // useEffect(() => {
-  //   if (mode === "edit" && initialData?.siteAddress) {
-  //     form.setValue("siteAddress", initialData.siteAddress, {
-  //       shouldValidate: false,
-  //       shouldDirty: false,
-  //     });
-  //   }
-  //   // eslint-disable-next-line react-hooks/exhaustive-deps
-  // }, []);
-
-  const involveDroneFilming = form.watch("formData.involveDroneFilming");
-  const includeDroneStep = involveDroneFilming === "yes";
-
-  // Build the ordered step list, inserting drone step conditionally
-  const steps = includeDroneStep
-    ? [...BASE_STEPS.slice(0, 5), DRONE_STEP, BASE_STEPS[5]]
-    : [...BASE_STEPS];
-
-  const totalSteps = steps.length;
+  const totalSteps = STEPS.length;
   const isFirstStep = currentStep === 1;
   const isLastStep = currentStep === totalSteps;
+  const currentStepConfig = STEPS[currentStep - 1];
 
-  // Map UI step position → logical step id for field validation
-  const currentStepConfig = steps[currentStep - 1];
-  const logicalStepId = currentStepConfig.id;
+  // Whether this mode should enforce validation (create or draft submitting)
+  const shouldValidate = mode === "create" || isDraft;
 
-  const handleNext = async () => {
-    // In edit mode with pre-populated data, skip per-step validation
-    // Full validation runs on final submit via form.trigger()
-    if (mode !== "edit") {
-      const fields = STEP_FIELDS[logicalStepId] ?? [];
-      const valid = await form.trigger(
-        fields.length > 0
-          ? (fields as Parameters<typeof form.trigger>[0])
-          : undefined,
-      );
-      if (!valid) return;
+  // Check if a document type is satisfied — either a new file selected
+  // or an existing uploaded document covers it
+  const isDocSatisfied = (documentType: string): boolean => {
+    if (files[documentType]) return true;
+    return existingDocuments.some((d) => d.documentType === documentType);
+  };
+
+  // ── Step 5 aerial document validation ─────────────────────────────────────
+
+  const validateStep5 = (): boolean => {
+    const involves = form.getValues("formData.involvesAerialFilming");
+    if (involves !== "yes") return true;
+    const required = [
+      DOCUMENT_TYPES.ROC_CERTIFICATE,
+      DOCUMENT_TYPES.RPL_LICENCE,
+      DOCUMENT_TYPES.ASL_LICENCE,
+      DOCUMENT_TYPES.AERIAL_PUBLIC_LIABILITY,
+      DOCUMENT_TYPES.AERIAL_DISASTER_FORM,
+    ];
+    return required.every((dt) => isDocSatisfied(dt));
+  };
+
+  // ── Per-step validation ────────────────────────────────────────────────────
+
+  const validateCurrentStep = async (): Promise<boolean> => {
+    if (!shouldValidate) return true;
+
+    if (currentStep === 1) {
+      return form.trigger([
+        "formData.productionCompany",
+        "formData.productionTitle",
+        "formData.startDate",
+        "formData.productionType",
+        "formData.producingEmail",
+        "formData.producingCellphone",
+        "formData.contactFullName",
+        "formData.contactCellphone",
+        "formData.contactDesignation",
+      ]);
     }
 
-    // Step 1 advance: in edit mode the permit already exists — skip draft creation
-    if (currentStep === 1 && permitId === null) {
+    if (currentStep === 2) {
+      return form.trigger([
+        "formData.filmingLocationName",
+        "formData.filmingLocationAddress",
+        "formData.onSetContactNumber",
+        "formData.callTime",
+        "formData.wrapTime",
+      ]);
+    }
+
+    if (currentStep === 5) {
+      const docsValid = validateStep5();
+      if (!docsValid) {
+        setSubmitError(
+          "Please upload all required aerial filming documents before continuing.",
+        );
+        return false;
+      }
+      setSubmitError(null);
+      return true;
+    }
+
+    return true;
+  };
+
+  // ── Navigation ─────────────────────────────────────────────────────────────
+
+  const handleNext = async () => {
+    const valid = await validateCurrentStep();
+    if (!valid) return;
+
+    if (currentStep === 1 && permitId === null && !isDraft) {
       if (mode === "edit") {
         form.setError("root", {
           message: "Permit ID missing. Please refresh and try again.",
@@ -247,14 +278,47 @@ export default function PermitForm({
   };
 
   const handleBack = () => {
+    setSubmitError(null);
     setCurrentStep((s) => s - 1);
   };
 
+  // ── Submit ─────────────────────────────────────────────────────────────────
+
   const handleSubmit = async () => {
-    console.log("handleSubmit fired", { mode, permitId, isReturned });
-    // siteAddress has no input in the wizard — derive it from locationAddress
-    const locationAddress = form.getValues("formData.locationAddress");
-    form.setValue("siteAddress", locationAddress, {
+    // Enforce mandatory documents on create and draft —
+    // satisfied by either a new file OR an existing uploaded document
+    if (mode === "create" || isDraft) {
+      const mandatoryDocs = [
+        DOCUMENT_TYPES.PUBLIC_LIABILITY_INSURANCE,
+        DOCUMENT_TYPES.CITY_INDEMNITY,
+      ];
+      const missingMandatory = mandatoryDocs.filter(
+        (dt) => !isDocSatisfied(dt),
+      );
+      if (missingMandatory.length > 0) {
+        setSubmitError(
+          "Please upload all mandatory documents before submitting.",
+        );
+        return;
+      }
+    }
+
+    // Sync DB columns from form fields before final validation
+    const filmingLocationAddress = form.getValues(
+      "formData.filmingLocationAddress",
+    );
+    const productionTitle = form.getValues("formData.productionTitle");
+    const synopsis = form.getValues("formData.synopsis");
+
+    form.setValue("siteAddress", filmingLocationAddress, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+    form.setValue("projectName", productionTitle, {
+      shouldValidate: false,
+      shouldDirty: false,
+    });
+    form.setValue("description", synopsis ?? "", {
       shouldValidate: false,
       shouldDirty: false,
     });
@@ -267,27 +331,13 @@ export default function PermitForm({
     setSubmitError(null);
 
     try {
-      if (mode === "edit") {
-        const { updatePermitAction, resubmitPermitAction } =
-          await import("@/app/(applicant)/applications/[id]/edit/actions");
-        const action = isReturned ? resubmitPermitAction : updatePermitAction;
-        const result = await action(permitId, form.getValues());
+      // Convert File objects to base64 for Server Action
+      const fileEntries = Object.entries(files).filter(
+        (entry): entry is [string, File] => entry[1] !== null,
+      );
 
-        if (result && "error" in result) {
-          setSubmitError(
-            typeof result.error === "string"
-              ? result.error
-              : "Validation failed. Please check your answers.",
-          );
-          return;
-        }
-
-        return;
-      }
-
-      // ── Create flow (unchanged) ──────────────────────────────────────────
       const fileData = await Promise.all(
-        files.map(async (f) => {
+        fileEntries.map(async ([documentType, f]) => {
           const buffer = await f.arrayBuffer();
           const base64 = btoa(
             new Uint8Array(buffer).reduce(
@@ -295,64 +345,162 @@ export default function PermitForm({
               "",
             ),
           );
-          return { name: f.name, type: f.type, size: f.size, base64 };
+          return {
+            documentType,
+            name: sanitiseFilename(f.name),
+            type: f.type,
+            size: f.size,
+            base64,
+          };
         }),
       );
 
-      const result = await submitPermitAction(
-        permitId,
-        form.getValues(),
-        fileData,
-      );
-
-      if ("error" in result) {
-        setSubmitError(
-          typeof result.error === "string"
-            ? result.error
-            : "Validation failed. Please check your answers.",
+      // Draft in edit mode — submit like a new application
+      if (mode === "edit" && isDraft) {
+        const result = await submitPermitAction(
+          permitId,
+          form.getValues(),
+          fileData,
         );
-        return;
+        if (!result.success) {
+          setSubmitError(
+            result.error ?? "Validation failed. Please check your answers.",
+          );
+          return;
+        }
+      } else if (mode === "edit" && isIncomplete) {
+        const { resubmitPermitAction } =
+          await import("@/app/(applicant)/applications/[id]/edit/actions");
+        const result = await resubmitPermitAction(
+          permitId,
+          form.getValues(),
+          fileData,
+        );
+        if (result && !result.success) {
+          setSubmitError(
+            typeof result.error === "string"
+              ? result.error
+              : "Validation failed. Please check your answers.",
+          );
+          return;
+        }
+      } else if (mode === "edit") {
+        const { updatePermitAction } =
+          await import("@/app/(applicant)/applications/[id]/edit/actions");
+        const result = await updatePermitAction(
+          permitId,
+          form.getValues(),
+          fileData,
+        );
+        if (result && !result.success) {
+          setSubmitError(
+            typeof result.error === "string"
+              ? result.error
+              : "Validation failed. Please check your answers.",
+          );
+          return;
+        }
+      } else {
+        // Create flow
+        const result = await submitPermitAction(
+          permitId,
+          form.getValues(),
+          fileData,
+        );
+        if (!result.success) {
+          setSubmitError(
+            result.error ?? "Validation failed. Please check your answers.",
+          );
+          return;
+        }
       }
 
       router.push("/applications");
-    } catch {
+    } catch (err) {
+      // Next.js redirect() throws internally — don't treat it as an error
+      if (
+        err instanceof Error &&
+        (err.message === "NEXT_REDIRECT" ||
+          err.message.includes("NEXT_REDIRECT"))
+      ) {
+        return;
+      }
       setSubmitError("Something went wrong. Please try again.");
     } finally {
       setIsSubmitting(false);
     }
   };
 
+  // ── Step renderer ──────────────────────────────────────────────────────────
+
   const renderStep = () => {
-    switch (logicalStepId) {
+    switch (currentStepConfig.id) {
       case 1:
-        return <Step01ProjectDetails form={form} />;
+        return <Step01ProductionDetails form={form} />;
       case 2:
-        return <Step02Location form={form} />;
+        return (
+          <Step02LocationApplication
+            form={form}
+            files={files}
+            onFileChange={handleFileChange}
+            existingDocuments={existingDocuments}
+          />
+        );
       case 3:
-        return <Step03Equipment form={form} />;
+        return (
+          <Step03TrafficAssistance
+            form={form}
+            files={files}
+            onFileChange={handleFileChange}
+            existingDocuments={existingDocuments}
+          />
+        );
       case 4:
-        return <Step04CrewSfx form={form} />;
+        return (
+          <Step04SfxPyrotechnics
+            form={form}
+            files={files}
+            onFileChange={handleFileChange}
+            existingDocuments={existingDocuments}
+          />
+        );
       case 5:
-        return <Step05TrafficDrone form={form} />;
+        return (
+          <Step05AerialFilming
+            form={form}
+            files={files}
+            onFileChange={handleFileChange}
+            existingDocuments={existingDocuments}
+          />
+        );
       case 6:
-        return <Step06Drone form={form} />;
+        return <Step06SpecialRequirements form={form} />;
       case 7:
-        return mode === "edit" ? (
-          <p className="text-base text-muted-foreground">
-            Document upload will be available soon.
-          </p>
-        ) : (
-          <Step07Documents form={form} files={files} onFilesChange={setFiles} />
+        return (
+          <Step07ProductionDocuments
+            form={form}
+            files={files}
+            onFileChange={handleFileChange}
+            isSubmitting={isSubmitting}
+            onSubmit={handleSubmit}
+            mode={mode}
+            isIncomplete={isIncomplete}
+            existingDocuments={existingDocuments}
+          />
         );
     }
   };
 
   const submitLabel =
     mode === "edit"
-      ? isReturned
+      ? isIncomplete
         ? "Resubmit Application"
-        : "Save Changes"
+        : isDraft
+          ? "Submit Application"
+          : "Save Changes"
       : "Submit Application";
+
+  // ── Render ─────────────────────────────────────────────────────────────────
 
   return (
     <Form {...form}>
@@ -360,7 +508,7 @@ export default function PermitForm({
         {/* Step indicator */}
         <nav aria-label="Form progress">
           <ol className="flex flex-wrap items-center gap-2">
-            {steps.map((step, index) => {
+            {STEPS.map((step, index) => {
               const stepNumber = index + 1;
               const isCompleted = completedSteps.includes(stepNumber);
               const isCurrent = currentStep === stepNumber;
@@ -380,16 +528,24 @@ export default function PermitForm({
                     aria-current={isCurrent ? "step" : undefined}
                   >
                     {isCompleted && !isCurrent ? (
-                      <CheckCircle2 className="h-3.5 w-3.5" />
+                      <CheckCircle2
+                        className="h-3.5 w-3.5"
+                        aria-hidden="true"
+                      />
                     ) : (
-                      <Circle className="h-3.5 w-3.5" />
+                      <Circle className="h-3.5 w-3.5" aria-hidden="true" />
                     )}
                     <span>{step.title}</span>
+                    {step.optional && (
+                      <span className="ml-1 text-sm opacity-70">
+                        (Optional)
+                      </span>
+                    )}
                   </div>
 
                   {/* Connector */}
-                  {index < steps.length - 1 && (
-                    <span className="text-muted-foreground" aria-hidden>
+                  {index < STEPS.length - 1 && (
+                    <span className="text-muted-foreground" aria-hidden="true">
                       ›
                     </span>
                   )}
@@ -415,21 +571,41 @@ export default function PermitForm({
         </nav>
 
         {/* Step content */}
-        <div className="rounded-md border bg-card p-6 shadow-sm">
-          <h2 className="mb-6 text-xl font-semibold">
-            {currentStepConfig.title}
-          </h2>
+        <div className="rounded-md border bg-card p-6 shadow-sm max-h-[70vh] overflow-y-auto">
           {renderStep()}
         </div>
 
         {/* Root-level error */}
         {(form.formState.errors.root || submitError) && (
-          <p className="text-sm text-destructive">
-            {form.formState.errors.root?.message ?? submitError}
-          </p>
+          <div className="flex items-start gap-3 rounded-lg border border-destructive/50 bg-destructive/10 px-4 py-3">
+            <svg
+              xmlns="http://www.w3.org/2000/svg"
+              className="h-5 w-5 shrink-0 text-destructive mt-0.5"
+              viewBox="0 0 24 24"
+              fill="none"
+              stroke="currentColor"
+              strokeWidth="2"
+              strokeLinecap="round"
+              strokeLinejoin="round"
+              aria-hidden="true"
+            >
+              <circle cx="12" cy="12" r="10" />
+              <line x1="12" y1="8" x2="12" y2="12" />
+              <line x1="12" y1="16" x2="12.01" y2="16" />
+            </svg>
+            <div>
+              <p className="text-base font-medium text-destructive">
+                Something went wrong
+              </p>
+              <p className="text-sm text-destructive/80 mt-0.5">
+                {form.formState.errors.root?.message ?? submitError}
+              </p>
+            </div>
+          </div>
         )}
 
         {/* Navigation */}
+        {/* Save as draft button intentionally commented out */}
         <PermitFormNavigation
           currentStep={currentStep}
           totalSteps={totalSteps}

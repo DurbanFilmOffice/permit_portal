@@ -5,9 +5,6 @@ import PermitForm from "@/components/permits/permit-form";
 import { APPLICANT_EDITABLE_STATUSES } from "@/lib/validations/permit-status";
 import type { PermitFormValues } from "@/lib/validations/permit-form.schema";
 
-type Genre = PermitFormValues["formData"]["genre"];
-type YesNo = "yes" | "no";
-
 export default async function EditPermitPage({
   params,
 }: {
@@ -28,7 +25,7 @@ export default async function EditPermitPage({
     notFound();
   }
 
-  const { permit } = detail;
+  const { permit, documents } = detail;
 
   // Only the owner can edit
   if (permit.userId !== session.user.id) notFound();
@@ -38,7 +35,7 @@ export default async function EditPermitPage({
     redirect(`/applications/${id}`);
   }
 
-  const rawForm = (permit.formData ?? {}) as Record<string, unknown>;
+  const raw = (permit.formData ?? {}) as Record<string, unknown>;
 
   const str = (v: unknown): string => (typeof v === "string" ? v : "");
   const strOpt = (v: unknown): string | undefined =>
@@ -47,68 +44,110 @@ export default async function EditPermitPage({
     typeof v === "number" ? v : undefined;
   const arr = (v: unknown): string[] =>
     Array.isArray(v) ? (v as string[]) : [];
-
-  const GENRES: Genre[] = [
-    "feature_film",
-    "documentary",
-    "reality_show",
-    "tv_series",
-    "tv_commercial",
-    "student_project",
-    "stills_photography",
-    "short_film",
-    "music_video",
-  ];
-  const genre = (v: unknown): Genre =>
-    GENRES.includes(v as Genre) ? (v as Genre) : "feature_film";
-
-  const yesNo = (v: unknown): YesNo => (v === "yes" || v === "no" ? v : "no");
-  const yesNoOpt = (v: unknown): YesNo | undefined =>
+  const yesNo = (v: unknown): "yes" | "no" => (v === "yes" ? "yes" : "no");
+  const yesNoOpt = (v: unknown): "yes" | "no" | undefined =>
     v === "yes" || v === "no" ? v : undefined;
 
+  const PRODUCTION_TYPES = [
+    "web_content",
+    "corporate_industrial",
+    "animation",
+    "drama_series",
+    "telenovela",
+    "other",
+  ] as const;
+  type PT = (typeof PRODUCTION_TYPES)[number];
+  const productionType = (v: unknown): PT =>
+    PRODUCTION_TYPES.includes(v as PT) ? (v as PT) : "web_content";
+
+  const TIMEFRAMES = ["micro_shoot", "medium_shoot", "large_shoot"] as const;
+  type TF = (typeof TIMEFRAMES)[number];
+  const timeframe = (v: unknown): TF | undefined =>
+    TIMEFRAMES.includes(v as TF) ? (v as TF) : undefined;
+
+  const ROAD_PORTIONS = ["sidewalk", "traffic_island", "travel_lane"] as const;
+  type RP = (typeof ROAD_PORTIONS)[number];
+  const roadPortion = (v: unknown): RP | undefined =>
+    ROAD_PORTIONS.includes(v as RP) ? (v as RP) : undefined;
+
+  const ROAD_CLOSURES = [
+    "intermittent",
+    "stop_and_go",
+    "full_closure",
+  ] as const;
+  type RC = (typeof ROAD_CLOSURES)[number];
+  const roadClosure = (v: unknown): RC | undefined =>
+    ROAD_CLOSURES.includes(v as RC) ? (v as RC) : undefined;
+
   const initialData: PermitFormValues = {
-    projectName: permit.projectName,
+    projectName: permit.projectName ?? "",
     siteAddress: permit.siteAddress ?? "",
+    description: permit.description ?? "",
+
     formData: {
-      companyName: str(rawForm.companyName),
-      projectTitle: str(rawForm.projectTitle),
-      startDate: str(rawForm.startDate),
-      endDate: strOpt(rawForm.endDate),
-      descriptionOfScenes: strOpt(rawForm.descriptionOfScenes),
-      tags: strOpt(rawForm.tags),
-      locationName: str(rawForm.locationName),
-      locationAddress: str(rawForm.locationAddress),
-      applicantContactNumber: str(rawForm.applicantContactNumber),
-      startTime: str(rawForm.startTime),
-      wrapTime: str(rawForm.wrapTime),
-      genre: genre(rawForm.genre),
-      equipment: arr(rawForm.equipment),
-      numberOfCrew: num(rawForm.numberOfCrew),
-      numberOfCars: num(rawForm.numberOfCars),
-      numberOfCast: strOpt(rawForm.numberOfCast),
-      numberOfExtras: strOpt(rawForm.numberOfExtras),
-      requiresSfxPermit: yesNo(rawForm.requiresSfxPermit),
-      gunSupervisorName: strOpt(rawForm.gunSupervisorName),
-      sfxGunSupervisorContact: strOpt(rawForm.sfxGunSupervisorContact),
-      initiationDetails: strOpt(rawForm.initiationDetails),
-      numberOfRounds: strOpt(rawForm.numberOfRounds),
-      numberOfResets: strOpt(rawForm.numberOfResets),
-      requiresTrafficControl: yesNo(rawForm.requiresTrafficControl),
-      roadIntersectionName: strOpt(rawForm.roadIntersectionName),
-      dateTrafficControlRequired: strOpt(rawForm.dateTrafficControlRequired),
-      trafficControlStartDate: strOpt(rawForm.trafficControlStartDate),
-      trafficControlEndDate: strOpt(rawForm.trafficControlEndDate),
-      trafficStartTimeAndWrapTime: strOpt(rawForm.trafficStartTimeAndWrapTime),
-      involveDroneFilming: yesNo(rawForm.involveDroneFilming),
-      proposedActivityDetails: strOpt(rawForm.proposedActivityDetails),
-      droneOperatorHasLicense: yesNoOpt(rawForm.droneOperatorHasLicense),
-      droneProposedActivityDetails: strOpt(
-        rawForm.droneProposedActivityDetails,
-      ),
-      showAfterCreated:
-        typeof rawForm.showAfterCreated === "boolean"
-          ? rawForm.showAfterCreated
-          : true,
+      // Step 1
+      productionCompany: str(raw.productionCompany),
+      productionTitle: str(raw.productionTitle),
+      startDate: str(raw.startDate),
+      endDate: strOpt(raw.endDate),
+      synopsis: strOpt(raw.synopsis),
+      productionType: productionType(raw.productionType),
+      applicationTimeframe: timeframe(raw.applicationTimeframe),
+      estimatedBudget: strOpt(raw.estimatedBudget),
+      producingEmail: str(raw.producingEmail),
+      producingTelephone: strOpt(raw.producingTelephone),
+      producingWebsite: strOpt(raw.producingWebsite),
+      producingAddress: strOpt(raw.producingAddress),
+      producingCellphone: str(raw.producingCellphone),
+      contactFullName: str(raw.contactFullName),
+      contactCellphone: str(raw.contactCellphone),
+      contactAltCellphone: strOpt(raw.contactAltCellphone),
+      contactDesignation: str(raw.contactDesignation),
+      productionBackground: strOpt(raw.productionBackground),
+      accommodationBooked: yesNoOpt(raw.accommodationBooked),
+      numberOfRoomsBooked: strOpt(raw.numberOfRoomsBooked),
+
+      // Step 2
+      filmingLocationName: str(raw.filmingLocationName),
+      filmingLocationAddress: str(raw.filmingLocationAddress),
+      onSetContactNumber: str(raw.onSetContactNumber),
+      callTime: str(raw.callTime),
+      wrapTime: str(raw.wrapTime),
+      descriptionOfScenes: strOpt(raw.descriptionOfScenes),
+      crewCount: num(raw.crewCount),
+      castTalentCount: num(raw.castTalentCount),
+      backgroundCastCount: num(raw.backgroundCastCount),
+      localBackgroundCastTalent: strOpt(raw.localBackgroundCastTalent),
+      vehicleCars: num(raw.vehicleCars),
+      vehicleVans: num(raw.vehicleVans),
+      vehicleTrucks: num(raw.vehicleTrucks),
+      vehicleBuses: num(raw.vehicleBuses),
+      roadPortionFilmed: roadPortion(raw.roadPortionFilmed),
+
+      // Step 3
+      roadClosureType: roadClosure(raw.roadClosureType),
+      numberOfLanes: strOpt(raw.numberOfLanes),
+      estimatedParkingDuration: strOpt(raw.estimatedParkingDuration),
+      numberOfPublicBaysRequired: num(raw.numberOfPublicBaysRequired),
+      truckSizeTons: strOpt(raw.truckSizeTons),
+      dateTrafficControlRequired: strOpt(raw.dateTrafficControlRequired),
+      trafficControlStartDate: strOpt(raw.trafficControlStartDate),
+      trafficControlEndDate: strOpt(raw.trafficControlEndDate),
+      trafficStartAndWrapTime: strOpt(raw.trafficStartAndWrapTime),
+
+      // Step 4
+      firingPointDischargeArea: strOpt(raw.firingPointDischargeArea),
+      materialList: strOpt(raw.materialList),
+      emergencyPlan: strOpt(raw.emergencyPlan),
+
+      // Step 5
+      involvesAerialFilming: yesNo(raw.involvesAerialFilming),
+      aerialFilmingLocation: strOpt(raw.aerialFilmingLocation),
+      proposedActivityDetails: strOpt(raw.proposedActivityDetails),
+      droneProposedActivityDetails: strOpt(raw.droneProposedActivityDetails),
+
+      // Step 6
+      equipment: arr(raw.equipment),
     },
   };
 
@@ -129,7 +168,9 @@ export default async function EditPermitPage({
         mode="edit"
         permitId={permit.id}
         initialData={initialData}
-        isReturned={permit.status === "incomplete"}
+        isIncomplete={permit.status === "incomplete"}
+        isDraft={permit.status === "draft"}
+        existingDocuments={documents}
       />
     </div>
   );

@@ -659,208 +659,199 @@ Zod schema location: `src/lib/validations/permit-form.schema.ts`
 
 ## Permit form — field definitions
 
-The permit application form is a **multi-step wizard** with 6 steps.
-Step 6 (Drone) is conditional — only shown if step 5 drone answer is Yes.
-All fields map to `form_data jsonb` on the permits table unless noted.
+The permit application form is a **7-step wizard**.
+Steps 3 (Traffic) and 4 (SFX) are always shown but marked optional.
+Step 5 (Aerial Filming) has a yes/no toggle — expands only if yes.
+All steps always visible in the progress indicator.
 
-Fields marked with * are required. All others are optional.
+All fields map to `form_data jsonb` unless noted as a DB column.
+Fields marked * are required.
 
 ### Structured DB columns (NOT in form_data)
-These are queryable/filterable so they live as proper columns:
-  permit_type    → derived from form context (always 'filming_permit' for now)
-  project_name   → maps to permits.project_name (required)
-  site_address   → maps to permits.site_address (from Location Address field)
-  description    → maps to permits.description (optional summary)
+  project_name  → maps to permits.project_name (Production Title)
+  site_address  → maps to permits.site_address (Filming Location Address)
+  description   → maps to permits.description (Synopsis — optional)
 
-### Step 1 — Project details
-```
-companyName*          text        free text input
-projectTitle*         text        → maps to permits.project_name column
-startDate*            date
-endDate               date        optional
-descriptionOfScenes   richtext    rich text editor (HTML stored as string)
-tags                  text        free text, comma-separated tags
-```
+### File upload strategy
+- Files held in React state (as File objects) until final submit
+- On submit: all files upload in parallel to Supabase Storage
+- Path pattern: permits/{permitId}/{documentType}/{filename}
+- Each file stored as a row in permit_documents with document_type field
+- Accepted types:
+    Certificates/official docs → PDF only
+    Sketches/maps/illustrations → PDF, JPG, PNG
+    General documents → PDF only
+- Max file size: 10MB per file
+- No orphaned files — nothing uploads until final submit
 
-### Step 2 — Location & more information
+### Step 1 — Production Details
 ```
-locationName*              text
-locationAddress*           text  → maps to permits.site_address column
-applicantContactNumber*    text
-startTime*                 text  (HH:MM format)
-wrapTime*                  text  (HH:MM format)
-genre*                     select  options TBD — store as free text for now
-```
+productionCompany*        text      (was: companyName)
+productionTitle*          text      → permits.project_name column
+startDate*                date
+endDate                   date      optional
+synopsis*                 textarea  → permits.description column
+productionType*           select    (replaces genre)
+  Options: web_content | corporate_industrial | animation |
+           drama_series | telenovela | other
+applicationTimeframe      select    optional
+  Options:
+    micro_shoot  → "Micro shoot: 24–48 working hours"
+    medium_shoot → "Medium-scale shoot: 3–7 working days"
+    large_shoot  → "Large-scale / Complex shoot: 14–30 working days"
+estimatedBudget           text      optional
 
-### Step 3 — Equipment & special requirements
-All checkboxes — stored as array of strings in form_data.
-```
-equipment: string[]   checkboxes (multiple selection):
-  'animals'
-  'base_camp'
-  'building_blackout'
-  'camera_crane'
-  'camera_truck'
-  'cherry_pickers'
-  'children'
-  'driving_sequence'
-  'fire_effects'
-  'generator'
-  'lighting_tower'
-  // more items may be added — store as open string array
-```
+// Producing Contact Details section
+producingEmail*           email
+producingTelephone        text      optional
+producingWebsite          text      optional
+producingAddress          text      optional
+producingCellphone*       text
 
-### Step 4 — Crew & SFX
-```
-numberOfCrew              number    spinner input
-numberOfCars              number    spinner input
-numberOfCast              text      (may include non-numeric values)
-numberOfExtras            text
-requiresSfxPermit*        select    Yes / No
-gunSupervisorName         text      shown when requiresSfxPermit = Yes
-sfxGunSupervisorContact   text      shown when requiresSfxPermit = Yes
-initiationDetails         text      shown when requiresSfxPermit = Yes
-numberOfRounds            text      shown when requiresSfxPermit = Yes
-numberOfResets            text      shown when requiresSfxPermit = Yes
+// Production Contact Person section
+contactFullName*          text
+contactCellphone*         text
+contactAltCellphone       text      optional
+contactDesignation*       text
+
+productionBackground      textarea  optional
+accommodationBooked       select    Yes / No — optional
+numberOfRoomsBooked       text      optional (shown when accommodationBooked = yes)
 ```
 
-### Step 5 — Traffic control
+### Step 2 — Location Application
 ```
-requiresTrafficControl*          select    Yes / No
-roadIntersectionName             text      shown when requiresTrafficControl = Yes
-dateTrafficControlRequired       date      shown when requiresTrafficControl = Yes
-trafficControlStartDate          date      shown when requiresTrafficControl = Yes
-trafficControlEndDate            date      shown when requiresTrafficControl = Yes
-trafficStartTimeAndWrapTime      text      shown when requiresTrafficControl = Yes
-involveDroneFilming*             select    Yes / No
-```
+filmingLocationName*          text      (was: locationName)
+filmingLocationAddress*       text      → permits.site_address column
+onSetContactNumber*           text      (was: applicantContactNumber)
+callTime*                     text      HH:MM format (was: startTime)
+wrapTime*                     text
+descriptionOfScenes           textarea  optional (moved from step 1)
+locationIllustration          file      PDF/JPG/PNG, optional
+  document_type: 'location_illustration'
 
-### Step 6 — Drone filming (conditional — only shown if involveDroneFilming = Yes)
-```
-proposedActivityDetails      richtext    rich text editor
-droneOperatorHasLicense*     select      Yes / No
-droneProposedActivityDetails richtext    rich text editor
-```
+// Crew & Cast section
+crewCount                     number    optional
+castTalentCount               number    optional
+backgroundCastCount           number    optional
+localBackgroundCastTalent     text      optional
 
-### Step 7 — Documents & submit
+// Vehicle Count section
+vehicleCars                   number    optional
+vehicleVans                   number    optional
+vehicleTrucks                 number    optional
+vehicleBuses                  number    optional
 
-DOCUMENT UPLOAD IS DEFERRED — requirements are changing.
-Individual document upload per document type will be implemented
-in a future session once requirements are confirmed.
-Do not build any file upload UI or storage logic until instructed.
-
-For now, step 7 shows:
-  - A placeholder message: "Document upload will be available soon."
-  - showAfterCreated checkbox: boolean default true
-    ("Show project after it's been created")
-
-```
-showAfterCreated   boolean   default true
+roadPortionFilmed             select    optional
+  Options: sidewalk | traffic_island | travel_lane
 ```
 
-### Rich text editor
-Rich text fields use a plain **Textarea** wrapped in a `RichTextEditor` component
-at `src/components/permits/rich-text-editor.tsx`.
-Tiptap was removed — do not reinstall it.
-Values stored as plain text strings in form_data jsonb.
-Rendered with `whitespace-pre-wrap` on detail/review pages.
-No dangerouslySetInnerHTML — no sanitisation needed.
-
-### Conditional field rules
-- SFX fields (gun supervisor, initiation, etc.) → visible only when requiresSfxPermit = 'yes'
-- Traffic control fields → visible only when requiresTrafficControl = 'yes'
-- Entire Step 6 (Drone) → only inserted into wizard when involveDroneFilming = 'yes'
-  (answered at the end of Step 5)
-- Drone operator license question → always shown within Step 6
-
-### Genre dropdown options (confirmed)
+### Step 3 — Traffic Assistance, Parking & Basecamp
+(Always shown — marked as optional section)
 ```
-'feature_film'      → "Feature Film"
-'documentary'       → "Documentary"
-'reality_show'      → "Video - Reality Show"
-'tv_series'         → "TV Series"
-'tv_commercial'     → "TV Commercial"
-'student_project'   → "Student Project"
-'stills_photography'→ "Stills Photography"
-'short_film'        → "Short Film"
-'music_video'       → "Music Video"
-```
-Note: Feature Film appeared twice in the original list — deduplicated to one entry.
-Store the key (e.g. 'feature_film') in form_data, display the label in the UI.
+roadClosureType               select    optional
+  Options:
+    intermittent → "Intermittent (specify number of lanes)"
+    stop_and_go  → "Stop & Go (specify number of lanes)"
+    full_closure → "Full Road Closure"
+numberOfLanes                 text      optional (shown when intermittent or stop_and_go)
+estimatedParkingDuration      text      optional
+numberOfPublicBaysRequired    number    optional
+truckSizeTons                 text      optional
 
-### Form data Zod schema shape
+// Traffic Control Details section
+dateTrafficControlRequired    date      optional
+trafficControlStartDate       date      optional
+trafficControlEndDate         date      optional
+trafficStartAndWrapTime       text      optional
+  (combined field for start time and wrap time)
+
+trafficIllustration           file      PDF/JPG/PNG, optional
+  document_type: 'traffic_illustration'
+```
+
+### Step 4 — SFX / Pyrotechnics
+(Always shown — marked as optional section)
+```
+sfxSketchSitePlan             file      PDF/JPG/PNG, optional
+  document_type: 'sfx_sketch'
+firingPointDischargeArea      text      optional
+pyrotechnicianQualifications  file      PDF only, optional
+  document_type: 'pyrotechnician_qualifications'
+materialList                  textarea  optional
+emergencyPlan                 textarea  optional
+```
+
+### Step 5 — Aerial Filming Application (Drone & Helicopter)
+(Conditional — yes/no toggle. Expands only if yes)
+```
+involvesAerialFilming*        select    Yes / No
+
+// Shown only when involvesAerialFilming = yes:
+aerialFilmingLocation         text      optional
+proposedActivityDetails       textarea  optional
+  description of proposed aerial activity
+droneProposedActivityDetails  textarea  optional
+  specific drone activity details
+rocCertificate                file      PDF only, mandatory when aerial = yes
+  document_type: 'roc_certificate'
+rplLicence                    file      PDF only, mandatory when aerial = yes
+  document_type: 'rpl_licence'
+aslLicence                    file      PDF only, mandatory when aerial = yes
+  document_type: 'asl_licence'
+aerialPublicLiabilityInsurance file     PDF only, mandatory when aerial = yes
+  document_type: 'aerial_public_liability'
+approvedDisasterForm          file      PDF only, mandatory when aerial = yes
+  document_type: 'aerial_disaster_form'
+```
+
+### Step 6 — Special Requirements
+(Equipment checkboxes — was step 3)
+```
+equipment: string[]   checkboxes:
+  'animals' | 'base_camp' | 'building_blackout' | 'camera_crane'
+  'camera_truck' | 'cherry_pickers' | 'children' | 'driving_sequence'
+  'fire_effects' | 'generator' | 'lighting_tower'
+```
+
+### Step 7 — Production Documents
+(Final submission — all files upload on submit)
+```
+// Mandatory (PDF only):
+publicLiabilityInsurance*     file    document_type: 'public_liability_insurance'
+cityIndemnity*                file    document_type: 'city_indemnity'
+
+// Optional (PDF only):
+proofOfPayment                file    document_type: 'proof_of_payment'
+filmingSchedule               file    document_type: 'filming_schedule'
+scriptSynopsis                file    document_type: 'script_synopsis'
+approvedRiskLetter            file    document_type: 'approved_risk_letter'
+approvedDisasterManagementForm file   document_type: 'approved_disaster_management'
+companyLetterhead             file    document_type: 'company_letterhead'
+applicantIdCopy               file    document_type: 'applicant_id'
+
+// Additional supporting documents (up to 3, PDF only):
+additionalDocument1           file    document_type: 'additional_1'
+additionalDocument2           file    document_type: 'additional_2'
+additionalDocument3           file    document_type: 'additional_3'
+```
+
+### Production Type options (replaces Genre/GENRE_OPTIONS)
 ```ts
-// src/lib/validations/permit-form.schema.ts
-export const permitFormSchema = z.object({
-  // Structured fields → DB columns
-  projectName:  z.string().min(1),
-  siteAddress:  z.string().min(1),
-
-  // Dynamic fields → form_data jsonb
-  formData: z.object({
-    // Step 1
-    companyName:          z.string().min(1),
-    projectTitle:         z.string().min(1),
-    startDate:            z.string().min(1),
-    endDate:              z.string().optional(),
-    descriptionOfScenes:  z.string().optional(),
-    tags:                 z.string().optional(),
-
-    // Step 2
-    locationName:              z.string().min(1),
-    locationAddress:           z.string().min(1),
-    applicantContactNumber:    z.string().min(1),
-    startTime:                 z.string().min(1),
-    wrapTime:                  z.string().min(1),
-    genre: z.enum([
-      'feature_film', 'documentary', 'reality_show', 'tv_series',
-      'tv_commercial', 'student_project', 'stills_photography',
-      'short_film', 'music_video',
-    ]),
-
-    // Step 3
-    equipment: z.array(z.string()).default([]),
-
-    // Step 4
-    numberOfCrew:             z.number().min(0).optional(),
-    numberOfCars:             z.number().min(0).optional(),
-    numberOfCast:             z.string().optional(),
-    numberOfExtras:           z.string().optional(),
-    requiresSfxPermit:        z.enum(['yes', 'no']),
-    gunSupervisorName:        z.string().optional(),
-    sfxGunSupervisorContact:  z.string().optional(),
-    initiationDetails:        z.string().optional(),
-    numberOfRounds:           z.string().optional(),
-    numberOfResets:           z.string().optional(),
-
-    // Step 5
-    requiresTrafficControl:       z.enum(['yes', 'no']),
-    roadIntersectionName:         z.string().optional(),
-    dateTrafficControlRequired:   z.string().optional(),
-    trafficControlStartDate:      z.string().optional(),
-    trafficControlEndDate:        z.string().optional(),
-    trafficStartTimeAndWrapTime:  z.string().optional(),
-    involveDroneFilming:          z.enum(['yes', 'no']),
-
-    // Step 6 — drone (conditional)
-    proposedActivityDetails:      z.string().optional(),
-    droneOperatorHasLicense:      z.enum(['yes', 'no']).optional(),
-    droneProposedActivityDetails: z.string().optional(),
-
-    // Step 7
-    showAfterCreated: z.boolean().default(true),
-  }),
-})
-export type PermitFormValues = z.infer<typeof permitFormSchema>
+export const PRODUCTION_TYPE_OPTIONS = [
+  { value: 'web_content',          label: 'Web Content' },
+  { value: 'corporate_industrial', label: 'Corporate / Industrial' },
+  { value: 'animation',            label: 'Animation' },
+  { value: 'drama_series',         label: 'Drama Series' },
+  { value: 'telenovela',           label: 'Telenovela' },
+  { value: 'other',                label: 'Other' },
+] as const
 ```
 
-### Document upload
-- Multiple files, all types accepted for now
-- On submit: upload each file to Supabase Storage bucket 'permit-documents'
-- Path pattern: `permits/{permitId}/{filename}`
-- Insert one row per file into permit_documents table
-- File URLs stored as permit_documents.file_url
-- Required document types to be confirmed by client — accept all for now
+### permit_documents — document_type field
+Identifies which form field each uploaded file belongs to.
+Used in the detail view to display documents under the correct section.
+See document_type values listed per field above.
 
 ---
 

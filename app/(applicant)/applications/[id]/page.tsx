@@ -44,22 +44,22 @@ export default async function PermitDetailPage({
     <div className="space-y-8">
       <PermitDetailHeader permit={permit} isOwner={isOwner} canEdit={canEdit} />
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3 items-start lg:sticky lg:top-6">
         {/* Application Details — 2/3 */}
         <div className="lg:col-span-2 space-y-8">
           <section className="border rounded-md bg-card p-6">
             <h2 className="text-lg font-semibold mb-4">Application Details</h2>
-            <PermitDetailInfo permit={permit} />
+            <PermitDetailInfo permit={permit} documents={documents} />
           </section>
 
           <section>
-            <h2 className="text-lg font-semibold mb-4">Documents</h2>
-            <PermitDocumentsList documents={documents} />
+            {/* <h2 className="text-lg font-semibold mb-4">Documents</h2>
+            <PermitDocumentsList documents={documents} /> */}
           </section>
         </div>
 
-        {/* Sidebar — 1/3, stacked */}
-        <div className="space-y-8">
+        {/* Sidebar — 1/3, sticky */}
+        <div className="space-y-8 items-start lg:sticky lg:top-6">
           <section className="border rounded-md bg-card p-3">
             <h2 className="text-lg font-semibold mb-4">Status History</h2>
             <StatusTimeline history={history} />
