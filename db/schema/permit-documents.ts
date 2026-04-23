@@ -19,6 +19,7 @@ export const permitDocuments = pgTable(
     fileUrl: text("file_url").notNull(),
     fileType: text("file_type"),
     fileSizeBytes: integer("file_size_bytes"),
+    documentType: text("document_type"),
     uploadedAt: timestamp("uploaded_at", { withTimezone: true })
       .notNull()
       .defaultNow(),

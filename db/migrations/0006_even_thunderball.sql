@@ -1,0 +1,1 @@
+ALTER TABLE "permit_documents" ADD COLUMN "document_type" text;

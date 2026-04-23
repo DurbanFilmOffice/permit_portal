@@ -225,6 +225,60 @@ export function SearchInput() {
 }
 ```
 
+## File upload pattern (permit form)
+
+Files are held in React state until final submit.
+Nothing uploads to storage until the user clicks Submit.
+
+```ts
+// In the wizard orchestrator (index.tsx)
+// Files are stored separately from form text data
+const [files, setFiles] = useState<Record<string, File>>({})
+// key = document_type (e.g. 'location_illustration', 'roc_certificate')
+
+// FileUploadField component interface
+interface FileUploadFieldProps {
+  documentType: string        // key in files state
+  label: string
+  accept: string             // 'application/pdf' or 'application/pdf,image/*'
+  maxSizeMB?: number         // default 10
+  required?: boolean
+  value?: File               // controlled — from parent files state
+  onChange: (file: File | null) => void
+}
+
+// On submit — upload all files in parallel
+const uploadedDocs = await Promise.all(
+  Object.entries(files).map(async ([documentType, file]) => {
+    const path = `permits/${permitId}/${documentType}/${file.name}`
+    const url = await uploadFile('permit-documents', path, file)
+    return {
+      permitId,
+      fileName: file.name,
+      fileUrl: url,
+      fileType: file.type,
+      fileSizeBytes: file.size,
+      documentType,  // stored in permit_documents table
+    }
+  })
+)
+
+// Insert all document records
+await Promise.all(
+  uploadedDocs.map(doc => permitDocumentsRepository.create(doc))
+)
+```
+
+### File type rules
+- Certificates/official docs → 'application/pdf' only
+- Sketches/maps/illustrations → 'application/pdf,image/jpeg,image/png'
+- General documents → 'application/pdf' only
+- Max size: 10MB per file
+
+### permit_documents.document_type
+Every file stored with a document_type matching the field name.
+Used in detail view to display each doc under correct section heading.
+
 ## Soft delete pattern
 
 permit_comments and application_notes use soft deletes.

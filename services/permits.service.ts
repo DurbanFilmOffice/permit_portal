@@ -34,7 +34,6 @@ export const permitsService = {
     requestingRole: Role,
     reason?: string,
   ) {
-    // Block external_user and applicant
     if (["external_user", "applicant"].includes(requestingRole)) {
       throw new Error("You cannot change application status");
     }
@@ -42,7 +41,6 @@ export const permitsService = {
     const permit = await permitsRepository.findById(permitId);
     if (!permit) throw new Error("Application not found");
 
-    // Validate transition
     const allowed = VALID_TRANSITIONS[permit.status] ?? [];
     if (!allowed.includes(newStatus)) {
       throw new Error(
@@ -50,7 +48,6 @@ export const permitsService = {
       );
     }
 
-    // Validate role for finalising transitions
     const finalisingStatuses = ["approved", "rejected"];
     if (
       finalisingStatuses.includes(newStatus) &&
@@ -63,12 +60,10 @@ export const permitsService = {
       );
     }
 
-    // Update permit status
     const updated = await permitsRepository.update(permitId, {
       status: newStatus,
     });
 
-    // Write status history
     await permitStatusHistoryRepository.create({
       permitId,
       changedBy: requestingUserId,
@@ -77,7 +72,6 @@ export const permitsService = {
       comment: reason ?? null,
     });
 
-    // Notify applicant — fire and forget
     notificationsService
       .onStatusChanged(updated, reason)
       .catch((err) => console.error("Status change notification failed:", err));
@@ -91,11 +85,11 @@ export const permitsService = {
       formData: Partial<PermitFormValues["formData"]>;
     },
   ) {
-    return permitsRepository.createDraft({
+    return await permitsRepository.createDraft({
       userId,
       projectName: data.projectName,
-      siteAddress: data.formData.locationAddress ?? "",
-      description: data.formData.descriptionOfScenes ?? null,
+      siteAddress: "",
+      description: null,
       formData: { ...data.formData, permitType: "filming_permit" },
       status: "draft",
     });
@@ -116,10 +110,11 @@ export const permitsService = {
 
     await permitsRepository.update(permitId, {
       projectName: data.projectName,
-      siteAddress: data.formData.locationAddress,
-      description: data.formData.descriptionOfScenes ?? null,
+      siteAddress: data.siteAddress,
+      description: data.description ?? null,
       formData: data.formData,
     });
+
     const submitted = await permitsRepository.submit(permitId);
 
     await Promise.all(
@@ -157,10 +152,10 @@ export const permitsService = {
       throw new Error("This application can no longer be edited");
     }
 
-    return permitsRepository.update(permitId, {
+    return await permitsRepository.update(permitId, {
       projectName: data.projectName,
-      siteAddress: data.formData.locationAddress,
-      description: data.formData.descriptionOfScenes ?? null,
+      siteAddress: data.siteAddress,
+      description: data.description ?? null,
       formData: data.formData,
     });
   },

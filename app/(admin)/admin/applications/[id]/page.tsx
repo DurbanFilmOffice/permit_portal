@@ -39,7 +39,7 @@ export default async function AdminPermitDetailPage({
     notFound();
   }
 
-  const { permit, history } = detail;
+  const { permit, history, documents } = detail;
 
   const [assignments, internalUsers] = await Promise.all([
     assignmentsService.getPermitAssignments(id),
@@ -73,17 +73,17 @@ export default async function AdminPermitDetailPage({
         showApprovalActions={true}
       />
 
-      <div className="grid gap-8 lg:grid-cols-3">
+      <div className="grid gap-8 lg:grid-cols-3 lg:sticky lg:top-6 items-start">
         {/* Application Details — 2/3 */}
         <div className="lg:col-span-2">
           <section className="border rounded-md bg-card p-10">
             <h2 className="text-xl font-semibold mb-4">Application Details</h2>
-            <PermitDetailInfo permit={permit} />
+            <PermitDetailInfo permit={permit} documents={documents} />
           </section>
         </div>
 
         {/* Sidebar — 1/3, stacked */}
-        <div className="space-y-8">
+        <div className="space-y-8 items-start lg:sticky lg:top-6">
           <section className="border rounded-md bg-card p-3">
             <h2 className="text-xl font-semibold mb-4">Status History</h2>
             <StatusTimeline history={history} />
